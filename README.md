@@ -14,3 +14,14 @@ Converts an image file to gcode.  Asumes white is back ground, or z position hig
 Must specify units, bit sizes, etc.  Autoscales to region of interest.
 
 
+cnc_pcb_height_probe
+--------------------
+
+### firmware:
+code for atmega328(p?) to communicate through USB (using V-USB) to report whether there is a continuity condition
+
+### commandlinetool:
+command line tool to query the micro.
+
+
+Code based off of V-USB's 'hid-data' example program
