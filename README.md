@@ -17,6 +17,8 @@ Must specify units, bit sizes, etc.  Autoscales to region of interest.
 cnc_pcb_height_probe
 --------------------
 
+Code based off of V-USB's 'hid-data' example program
+
 ### firmware:
 code for atmega328(p?) to communicate through USB (using V-USB) to report whether there is a continuity condition
 
@@ -24,4 +26,3 @@ code for atmega328(p?) to communicate through USB (using V-USB) to report whethe
 command line tool to query the micro.
 
 
-Code based off of V-USB's 'hid-data' example program
