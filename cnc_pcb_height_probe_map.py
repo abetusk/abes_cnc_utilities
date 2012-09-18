@@ -23,7 +23,7 @@ grbl_baud = 9600
 grbl_serial = serial.Serial(grbl_dev, grbl_baud)
 
 
-probe_cmd = " ./cnc_pcb_height_probe_query read | grep continuity"
+probe_cmd = " ./cnc_pcb_height_probe read | grep continuity"
 def probe_serial( ):
   (ret, res) = commands.getstatusoutput( probe_cmd )
   if ( re.search('continuity: yes', res) ):
