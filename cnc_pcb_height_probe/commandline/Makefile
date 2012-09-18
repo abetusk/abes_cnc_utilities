@@ -24,8 +24,8 @@ CC=				gcc
 CFLAGS=			-O -Wall $(USBFLAGS)
 LIBS=			$(USBLIBS)
 
-OBJ=		hidtool.o hiddata.o
-PROGRAM=	hidtool$(EXE_SUFFIX)
+OBJ=		cnc_pcb_height_probe.o hiddata.o
+PROGRAM=	cnc_pcb_height_probe$(EXE_SUFFIX)
 
 all: $(PROGRAM)
 
