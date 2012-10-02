@@ -3,6 +3,7 @@
 # I tried to get fancy and not assume the height map grid was uniform, but it's getting cumbersom
 # ASSUMES HEIGHT MAP IS UNIFORM
 #
+# simple catmull-rom interpoloation of a gcode file (2 distinct depths) given a height map
 
 import random
 import sys
