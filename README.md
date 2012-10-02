@@ -26,3 +26,17 @@ code for atmega328(p?) to communicate through USB (using V-USB) to report whethe
 command line tool to query the micro.
 
 
+scri.py
+-------
+
+usage:
+scri.py -g <gcode file> -m <height file> [-z <threshold>] [-h|--help]
+
+outputs new gcode based on gcode file and height map  to produce an interpolated z-height for all heights under <threshold> (default to 0).
+
+
+gen_resolution_test.py
+----------------------
+
+generate a some resolution tests.  Hard coded values for now
+
