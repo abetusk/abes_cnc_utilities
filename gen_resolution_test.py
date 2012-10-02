@@ -227,10 +227,13 @@ width = 0.5
 
 pitch = trace_width + clearance
 
+print "( tool angle: ", angle, " degrees)"
 print "( tool_offset in ", units, ":", tool_offset, ")"
 print "( tool_width in ", units, ":", tool_width , ")"
 print "( trace_width in ", units, ":", trace_width, ")"
+print "( trace_width_mil :", trace_width_mil, ")"
 print "( clearance in ", units, ":", clearance , ")"
+print "( clearance_mil :", clearance_mil , ")"
 print "( height_length in ", units, ":", height_length, ")"
 print "( height in ", units, ":", height , ")"
 print "( width_length in ", units, ":", width_length, ")"
@@ -248,16 +251,29 @@ print "g1 f100"
 #draw_num_simple( clearance_mil, height, width, 10.0, 10.0  )
 shift = 1.0
 
-tw_mil = [ 5, 8, 10, 15, 20 ]
-#clr_mil = [ 5, 8, 10 ]
-clr_mil = [ 15, 20]
-#clr_mil = [ 5, 8, 10, 15 ]
+tw_mil = [ 5, 10, 15, 20 ]
+clr_mil = [ 5, 10 ]
+
+#tw_mil = [ 5, 10, 15, 20 ]
+#clr_mil = [ 15, 20 ]
+
+#tw_mil = [ 5, 10, 15, 20 ]
+#clr_mil = [ 8 ]
+
+#tw_mil = [ 8 ]
 #clr_mil = [ 5, 8, 10, 15, 20 ]
 
+## all
+#tw_mil = [ 5, 10, 15, 20 ]
+#clr_mil = [ 5, 8, 10, 15, 20 ]
+
+x_mod = 4
+x_counter = 0
+
 y = 0.0
+x = 0.0
 for clearance_mil in clr_mil:
 
-  x = 0.0
   for trace_width_mil in tw_mil:
     trace_width = float(trace_width_mil) / 1000.0
     clearance = float(clearance_mil) / 1000.0
@@ -266,8 +282,10 @@ for clearance_mil in clr_mil:
     draw_num_simple( trace_width_mil , x + width_length, y + height_length/2.0, (width_length/2.0) - 0.01, (height_length/2.0) - 0.01, .1  )
     draw_num_simple( clearance_mil, x + width_length + (width_length/2.0), y, (width_length/2.0) - 0.01, (height_length/2.0) - 0.01, .1  )
 
-    x += shift
-
-  y += shift
-
+    x_counter += 1
+    if ( (x_counter % x_mod) == 0):
+      y += shift
+      x = 0.0
+    else:
+      x += shift
 
