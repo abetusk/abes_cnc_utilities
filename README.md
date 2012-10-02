@@ -32,7 +32,7 @@ scri.py
 usage:
 scri.py -g gcode_file -m height_file [-z threshold] [-h|--help]
 
-outputs new gcode based on gcode file and height map  to produce an interpolated z-height for all heights under <threshold> (default to 0).
+outputs new gcode based on gcode file and height map  to produce an interpolated z-height for all heights under threshold (default to 0).
 
 
 gen_resolution_test.py
