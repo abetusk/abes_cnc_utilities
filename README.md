@@ -26,3 +26,27 @@ code for atmega328(p?) to communicate through USB (using V-USB) to report whethe
 command line tool to query the micro.
 
 
+scri.py
+-------
+
+usage:
+scri.py -g gcode_file -m height_file [-z threshold] [-h|--help]
+
+outputs new gcode based on gcode file and height map  to produce an interpolated z-height for all heights under threshold (default to 0).
+
+
+gen_resolution_test.py
+----------------------
+
+generate a some resolution tests.  Hard coded values for now
+
+
+grbl_inch2mm.py, grbl_mm2inch.py
+--------------------------------
+
+simple scripts to convert a grbl file from mm to inches and vice versa.  Only works on [xyzXYZ] co-ordinates
+
+inch2mm.py, mm2inch.py
+----------------------
+
+simple scripts to convert from mm to inches and vice versa.

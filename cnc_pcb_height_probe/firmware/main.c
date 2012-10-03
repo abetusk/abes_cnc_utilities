@@ -171,7 +171,7 @@ int main(void) {
       PORTB |= (1 << 1); // Turn on LED1 
       PORTB &= ~(1 << 2); // Turn off LED2 
       height_data_ready = 0;
-      height_data[0] = 0xff;
+      height_data[0] |= 0x01;
       height_data_ready = 1;
     }
     else
@@ -179,7 +179,7 @@ int main(void) {
       PORTB &= ~(1 << 1); // Turn off LED1 
       PORTB |= (1 << 2); // Turn on LED2 
       height_data_ready = 0;
-      height_data[0] = 0x00;
+      height_data[0] &= 0xfe;
       height_data_ready = 1;
     }
 
