@@ -5,7 +5,7 @@ import sys
 
 for line in sys.stdin:
   li = line.rstrip()
-  l = re.compile("([xyzXYZ]\s*-?\d+\.?\d+)").split(li)
+  l = re.compile("([xyzXYZ]\s*-?\d+\.?\d*)").split(li)
 
   s = ''
   for w in l:
