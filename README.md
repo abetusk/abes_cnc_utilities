@@ -40,3 +40,8 @@ gen_resolution_test.py
 
 generate a some resolution tests.  Hard coded values for now
 
+
+grbl_inch2mm.py, grbl_mm2inch.py
+--------------------------------
+
+simple scripts to convert a grbl file from mm to inches and vice versa.  Only works on [xyzXYZ] co-ordinates
