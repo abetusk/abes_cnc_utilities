@@ -27,12 +27,14 @@ z_del = 0.01
 z_tic = int( round( ((z_max - z_min) / z_del) + 0.5 ) )
 
 x_min = 0.0
-x_max = 80.0
-x_tic = 16 + 1
+#x_max = 80.0
+x_max = 100.0
+x_tic = 20 + 1
 
 y_min = 0.0
-y_max = 40.0
-y_tic = 8 + 1
+#y_max = 40.0
+y_max = 60.0
+y_tic = 12 + 1
 
 verbose = 0
 
@@ -96,7 +98,7 @@ def get_grbl_var_position( var_name ):
   return var_pos
 
 def wait_for_var_position( var_name, var_val ):
-  sleepy = 0.1
+  sleepy = 0.05
   var_epsilon = 0.001
   cur_val = get_grbl_var_position( var_name )
   if verbose:
@@ -141,7 +143,8 @@ for x in numpy.linspace(x_min, x_max, x_tic):
 
 #  for y in numpy.linspace(y_min, y_max, y_tic):
   for y in numpy.linspace(y_start, y_end, y_tic):
-    time.sleep(.1)
+    #time.sleep(.1)
+    time.sleep(.05)
     if verbose:
       print "# starting probe for x", x, "y", y, "(z", z_max, ")"
     send_grbl_command( "g1z" + str(z_max) )
