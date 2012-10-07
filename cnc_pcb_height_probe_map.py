@@ -24,7 +24,14 @@ z_max = 0.1
 z_min = -1.0
 z_del = 0.01
 
-z_tic = int( round( ((z_max - z_min) / z_del) + 0.5 ) )
+# from observation, 0.25 max to min.  0.15 headroom should be plenty 
+#   it's also dynamic, so it's going to increase as it scans out
+#   the work
+z_headroom = 0.15  
+
+cur_z_start = z_max
+observed_z_max = z_min
+#z_tic = int( round( ((z_max - z_min) / z_del) + 0.5 ) )
 
 x_min = 0.0
 #x_max = 80.0
@@ -154,6 +161,9 @@ for x in numpy.linspace(x_min, x_max, x_tic):
     wait_for_var_position("Y", y)
     wait_for_var_position("Z", z_max)
 
+    #z_tic = int( round( ((z_max - z_min) / z_del) + 0.5 ) )
+    z_tic = int( round( ((cur_z_start - z_min) / z_del) + 0.5 ) )
+
     for z in numpy.linspace(z_max, z_min, z_tic):
       if verbose:
         print "#  positioning z", z
@@ -177,6 +187,9 @@ for x in numpy.linspace(x_min, x_max, x_tic):
 
     if (z <= z_min):
       sys.exit("ERROR: z_min (" + str(z_min) + ") reached")
+
+    observed_z_max  = max(z, observed_z_max)
+    cur_z_start     = min(z_max, observed_z_min + z_headroom)
 
     print str(x), str(y), str(z)
     sys.stdout.flush()
