@@ -5,6 +5,7 @@ generate PCB resolution test
 
 """
 
+import sys
 import math
 
 units = "inches"
@@ -182,6 +183,127 @@ def draw_test( tool_offset, trace_width, clearance, x_start, y_start, width_leng
 
     cur_x = x_start + (pitch*float(l)) - tool_offset
     print "g1 x" + str(cur_x), "y" + str(cur_y)
+
+def draw_hor_test( pitch, x_start, y_start, length, n_lines ):
+
+  for n in range(n_lines):
+    if ( n % 2 ):
+      cur_x = x_start + length
+      cur_y = y_start + ( pitch * float(n) )
+    else:
+      cur_x = x_start
+      cur_y = y_start + ( pitch * float(n) )
+
+    print "g1 z" + str(z_up)
+    print "g0 x" + str(cur_x), "y" + str(cur_y)
+
+    print "g1 z" + str(z_depth)
+
+    if (n % 2):
+      cur_x -= length
+    else:
+      cur_x += length
+    print "g1 x" + str(cur_x), "y" + str(cur_y)
+
+  # outline the traces
+  print "g1 z" + str(z_up)
+  print "g0 x" + str(x_start), "y" + str(y_start)
+
+  print "g1 z" + str(z_depth)
+  print "g1 x" + str(x_start), "y" + str(y_start + (pitch * (n_lines - 1)))
+
+  print "g1 z" + str(z_up)
+  print "g0 x" + str(x_start + length), "y" + str(y_start + (pitch * (n_lines - 1)))
+
+  print "g1 z" + str(z_depth)
+  print "g1 x" + str(x_start + length), "y" + str(y_start)
+
+  print "g1 z" + str(z_up)
+  print "g1 x" + str(x_start), "y" + str(y_start)
+
+
+def draw_ver_test( pitch, x_start, y_start, length, n_lines ):
+
+  for n in range(n_lines):
+
+    if (n % 2):
+      cur_x = x_start + ( pitch * float(n) )
+      cur_y = y_start + length
+    else:
+      cur_x = x_start + ( pitch * float(n) )
+      cur_y = y_start
+
+    print "g1 z" + str(z_up)
+    print "g0 x" + str(cur_x), "y" + str(cur_y)
+
+    print "g1 z" + str(z_depth)
+
+    if (n % 2):
+      cur_y -= length
+    else:
+      cur_y += length
+
+    print "g1 x" + str(cur_x), "y" + str(cur_y)
+
+  # outline the traces
+  print "g1 z" + str(z_up)
+  print "g0 x" + str(x_start), "y" + str(y_start)
+
+  print "g1 z" + str(z_depth)
+  print "g1 x" + str(x_start + (pitch * (n_lines - 1))), "y" + str(y_start)
+
+  print "g1 z" + str(z_up)
+  print "g0 x" + str(x_start + (pitch * (n_lines - 1))), "y" + str(y_start + length)
+
+  print "g1 z" + str(z_depth)
+  print "g1 x" + str(x_start), "y" + str(y_start + length)
+
+  print "g1 z" + str(z_up)
+  print "g0 x" + str(x_start), "y" + str(y_start)
+
+pitches_mil = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ]
+
+n_lines = 10
+length = 0.5
+num_size = 0.125
+num_space = 0.05
+
+start_x = 0.0
+start_y = 0.0
+
+print "g0 f100"
+print "g1 f100"
+
+#pitch = 20.0 / 1000.0
+#pitch_mil = int(pitch * 1000.0)
+
+count=0
+count_vertical = 0
+count_mod = 4
+
+for pitch_mil in pitches_mil:
+
+  pitch = float(pitch_mil) / 1000.0
+
+  draw_ver_test( pitch, start_x, start_y, length, n_lines )
+
+  start_x += (float(n_lines) * pitch) + 0.1
+  draw_hor_test( pitch, start_x, start_y, length, n_lines )
+
+  draw_num_simple( pitch_mil, start_x, start_y + length - num_size, num_size, num_size, num_space )
+
+  start_x += length + 0.1
+
+  count += 1
+  if ( (count % count_mod ) == 0 ):
+    count_vertical += 1
+    start_y = float(count_vertical * (length + 0.1) )
+    start_x = 0.0
+
+sys.exit(0)
+
+
+
 
 # a angle
 #
