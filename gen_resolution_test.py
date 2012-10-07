@@ -7,6 +7,7 @@ generate PCB resolution test
 
 import sys
 import math
+import numpy
 
 units = "inches"
 
@@ -32,7 +33,7 @@ def draw_rect( l ):
   print "g1 x" + str(x0) + " y" + str(y0)
   print "g1 z" + str(z_up)
 
-def draw_line( l ):
+def draw_line( l, break_segment_length = 0.1 ):
   #x0, y0, x1, y1 ):
   x0 = l[0]
   y0 = l[1]
@@ -41,6 +42,19 @@ def draw_line( l ):
   print "g1 z" + str(z_up)
   print "g0 x" + str(x0) + " y" + str(y0)
   print "g1 z" + str(z_depth)
+
+  dx = x1 - x0
+  dy = y1 - y0
+
+  dl = math.sqrt( (dx*dx) + (dy*dy) ) 
+
+  n_segment = dl / break_segment_length
+
+  for v in numpy.linspace(0, dl, n_segment):
+    x = ( (x1-x0)*v / dl ) + x0
+    y = ( (y1-y0)*v / dl ) + y0
+    print "g1 x" + str(x) + " y" + str(y)
+
   print "g1 x" + str(x1) + " y" + str(y1)
   print "g1 z" + str(z_up)
 
@@ -82,7 +96,7 @@ def draw_num( num, x_start, y_start ):
       draw_rect( seg[ pos ] )
 
 
-def draw_num_simple( num, x_start, y_start, height, width, space ):
+def draw_num_simple( num, x_start, y_start, height, width, space, break_segment = 0.1 ):
   #   .66666.
   #   4     5
   #   4     5
@@ -116,7 +130,7 @@ def draw_num_simple( num, x_start, y_start, height, width, space ):
   if num == 0:
     for pos in num_seg[0]:
       l = seg[ pos ]
-      draw_line( [ l[0] + x_start, l[1] + y_start, l[2] + x_start, l[3] + y_start ] )
+      draw_line( [ l[0] + x_start, l[1] + y_start, l[2] + x_start, l[3] + y_start ], break_segment )
     return
 
   s = ''
@@ -133,7 +147,7 @@ def draw_num_simple( num, x_start, y_start, height, width, space ):
 
     for pos in num_seg[digit]:
       l = seg[ pos ]
-      draw_line( [ l[0] + x_start, l[1] + y_start, l[2] + x_start, l[3] + y_start ] )
+      draw_line( [ l[0] + x_start, l[1] + y_start, l[2] + x_start, l[3] + y_start ], break_segment )
 
     x_start += width + space
 
@@ -184,7 +198,7 @@ def draw_test( tool_offset, trace_width, clearance, x_start, y_start, width_leng
     cur_x = x_start + (pitch*float(l)) - tool_offset
     print "g1 x" + str(cur_x), "y" + str(cur_y)
 
-def draw_hor_test( pitch, x_start, y_start, length, n_lines ):
+def draw_hor_test( pitch, x_start, y_start, length, n_lines, break_segment_length = 0.1 ):
 
   for n in range(n_lines):
     if ( n % 2 ):
@@ -199,11 +213,18 @@ def draw_hor_test( pitch, x_start, y_start, length, n_lines ):
 
     print "g1 z" + str(z_depth)
 
+    final_x = cur_x
     if (n % 2):
-      cur_x -= length
+      final_x -= length
     else:
-      cur_x += length
-    print "g1 x" + str(cur_x), "y" + str(cur_y)
+      final_x += length
+
+    n_segment = int( abs((final_x - cur_x) / break_segment_length) ) + 1
+
+    for x in numpy.linspace(cur_x, final_x, n_segment):
+      print "( hor, x", str(x), ", y", str(cur_y), ")"
+      print "g1 x" + str(x), "y" + str(cur_y)
+    print "g1 x" + str(final_x), "y" + str(cur_y)
 
   # outline the traces
   print "g1 z" + str(z_up)
@@ -222,7 +243,7 @@ def draw_hor_test( pitch, x_start, y_start, length, n_lines ):
   print "g1 x" + str(x_start), "y" + str(y_start)
 
 
-def draw_ver_test( pitch, x_start, y_start, length, n_lines ):
+def draw_ver_test( pitch, x_start, y_start, length, n_lines, break_segment_length = 0.1 ):
 
   for n in range(n_lines):
 
@@ -238,12 +259,19 @@ def draw_ver_test( pitch, x_start, y_start, length, n_lines ):
 
     print "g1 z" + str(z_depth)
 
+    final_y = cur_y
     if (n % 2):
-      cur_y -= length
+      final_y -= length
     else:
-      cur_y += length
+      final_y += length
 
-    print "g1 x" + str(cur_x), "y" + str(cur_y)
+    n_segment = int( abs((final_y - cur_y) / break_segment_length) ) + 1
+    print "( ver, final_y", str(final_y), ", cur_y", str(cur_y), ", break_segment_length", str(break_segment_length), ", n_segment", str(n_segment), ")"
+
+    for y in numpy.linspace(cur_y, final_y, n_segment):
+      print "( ver , x", str(cur_x), ", y", str(y), ")"
+      print "g1 x" + str(cur_x), "y" + str(y)
+    print "g1 x" + str(cur_x), "y" + str(final_y)
 
   # outline the traces
   print "g1 z" + str(z_up)
@@ -271,6 +299,8 @@ num_space = 0.05
 start_x = 0.0
 start_y = 0.0
 
+break_segment = 0.1
+
 print "g0 f100"
 print "g1 f100"
 
@@ -285,12 +315,12 @@ for pitch_mil in pitches_mil:
 
   pitch = float(pitch_mil) / 1000.0
 
-  draw_ver_test( pitch, start_x, start_y, length, n_lines )
+  draw_ver_test( pitch, start_x, start_y, length, n_lines, break_segment )
 
   start_x += (float(n_lines) * pitch) + 0.1
-  draw_hor_test( pitch, start_x, start_y, length, n_lines )
+  draw_hor_test( pitch, start_x, start_y, length, n_lines, break_segment )
 
-  draw_num_simple( pitch_mil, start_x, start_y + length - num_size, num_size, num_size, num_space )
+  draw_num_simple( pitch_mil, start_x, start_y + length - num_size, num_size, num_size, num_space, break_segment )
 
   start_x += length + 0.1
 
