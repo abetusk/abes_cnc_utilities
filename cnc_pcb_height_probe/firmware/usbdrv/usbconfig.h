@@ -159,6 +159,10 @@ section at the end of this file).
  * for long transfers increases the driver size.
  */
 /* #define USB_RX_USER_HOOK(data, len)     if(usbRxToken == (uchar)USBPID_SETUP) blinkLED(); */
+
+extern volatile unsigned char usb_rx_flag;
+#define USB_RX_USER_HOOK(data, len)  usb_rx_flag = 1;
+
 /* This macro is a hook if you want to do unconventional things. If it is
  * defined, it's inserted at the beginning of received message processing.
  * If you eat the received message and don't want default processing to
