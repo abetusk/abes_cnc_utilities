@@ -52,33 +52,33 @@ int             err;
 
 static void hexdump(char *buffer, int len)
 {
-int     i;
-FILE    *fp = stdout;
+  int     i;
+  FILE    *fp = stdout;
 
-    for(i = 0; i < len; i++){
-        if(i != 0){
-            if(i % 16 == 0){
-                fprintf(fp, "\n");
-            }else{
-                fprintf(fp, " ");
-            }
-        }
-        fprintf(fp, "0x%02x", buffer[i] & 0xff);
-    }
-    if(i != 0)
-        fprintf(fp, "\n");
+  printf("%4x:", 0);
+  if (len) printf("%02x", buffer[0] & 0xff);
+
+  for(i = 1; i < len; i++)
+  {
+    if ( (i%16) == 0 )
+      printf("\n%4x:", i);
+    fprintf(fp, " %02x", buffer[i] & 0xff);
+  }
+  if (i) fprintf(fp, "\n");
 }
 
 static int  hexread(char *buffer, char *string, int buflen)
 {
-char    *s;
-int     pos = 0;
+  char    *s;
+  int     pos = 0;
 
-    while((s = strtok(string, ", ")) != NULL && pos < buflen){
-        string = NULL;
-        buffer[pos++] = (char)strtol(s, NULL, 0);
-    }
-    return pos;
+  while( ( (s = strtok(string, ", ")) != NULL ) && 
+         ( pos < buflen ) )
+  {
+    string = NULL;
+    buffer[pos++] = (char)strtol(s, NULL, 0);
+  }
+  return pos;
 }
 
 /* ------------------------------------------------------------------------- */
@@ -118,9 +118,9 @@ int main(int argc, char **argv) {
           else printf("no");
           printf("\n");
 
-            //hexdump(buffer + 1, sizeof(buffer) - 1);
-            //for (i=0; i<129; i++) 
-            //  printf("[%i] %i (%x)\n", i, (int)((unsigned char)buffer[i]), (int)((unsigned char)buffer[i]));
+          hexdump(buffer + 1, sizeof(buffer) - 1);
+          //for (i=0; i<129; i++) 
+          //  printf("[%i] %i (%x)\n", i, (int)((unsigned char)buffer[i]), (int)((unsigned char)buffer[i]));
         }
     }else if(strcasecmp(argv[1], "write") == 0){
         int i, pos;
