@@ -1,11 +1,6 @@
-/* Name: main.c
- * Project: hid-data, example how to use HID for data transfer
- * Author: Christian Starkjohann
- * Creation Date: 2008-04-11
- * Tabsize: 4
- * Copyright: (c) 2008 by OBJECTIVE DEVELOPMENT Software GmbH
- * License: GNU GPL v2 (see License.txt), GNU GPL v3 or proprietary (CommercialLicense.txt)
- * This Revision: $Id$
+/* 
+ * Original code based on the project hid-data example by Christian Starkjohann
+ * License: GNU GPL v3 
  */
 
 /*
@@ -25,6 +20,44 @@ at least be connected to INT0 as well.
 #include "usbdrv.h"
 #include "oddebug.h"        /* This is also an example for using debug macros */
 
+enum height_data_pos {
+  HEIGHT_DATA_FLAG = 0,
+
+  HEIGHT_DATA_ADC_H,
+  HEIGHT_DATA_ADC_L,
+
+  HEIGHT_DATA_CAP_SENSE_RISE_HH,
+  HEIGHT_DATA_CAP_SENSE_RISE_H,
+  HEIGHT_DATA_CAP_SENSE_RISE_L,
+  HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_H,
+  HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_L,
+
+  HEIGHT_DATA_CAP_SENSE_FALL_HH,
+  HEIGHT_DATA_CAP_SENSE_FALL_H,
+  HEIGHT_DATA_CAP_SENSE_FALL_L,
+  HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_H,
+  HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_L,
+
+  HEIGHT_DATA_CAP_SENSE_COUNTER,
+  HEIGHT_DATA_CAP_SENSE_OVF,
+
+  HEIGHT_DATA_DEBUG
+
+
+};
+
+volatile unsigned char usb_rx_flag;
+
+enum cap_sense_state_enum {
+  CAP_SENSE_STATE_RISE = 1,
+  CAP_SENSE_STATE_FALL,
+  CAP_SENSE_STATE_STOP
+};
+
+volatile unsigned char cap_sense_state;
+volatile unsigned char time_rise_l, time_rise_h, time_rise_hh;
+volatile unsigned char time_fall_l, time_fall_h, time_fall_hh;
+
 /* ------------------------------------------------------------------------- */
 /* ----------------------------- USB interface ----------------------------- */
 /* ------------------------------------------------------------------------- */
@@ -33,6 +66,7 @@ at least be connected to INT0 as well.
 static unsigned char height_data[BUFFER_DATA_LENGTH];
 static unsigned char height_data_ready;
 static unsigned char message_data[BUFFER_DATA_LENGTH];
+
 
 PROGMEM char usbHidReportDescriptor[22] = {    /* USB report descriptor */
     0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
@@ -111,20 +145,117 @@ static unsigned char continuity;
 static unsigned char adc_flag;
 ISR(ADC_vect)
 {
-  //adc_flag=1;
-  //ADCSRA &= ~(1 << ADIE);  // disable ADC Interrupt 
-
   continuity = 0;
   if(ADCH < 128)
     continuity = 1;
+
+  height_data[ HEIGHT_DATA_ADC_H ] = ADCH;
+  height_data[ HEIGHT_DATA_ADC_L ] = ADCL;
 
 }
 
 
 /* ------------------------------------------------------------------------- */
 
+volatile char ovf;
+
+ISR(TIMER1_OVF_vect)
+{
+
+  // DEBUG
+  height_data[ HEIGHT_DATA_DEBUG ] |= 1;
+
+  ovf = 0;
+
+  if (cap_sense_state == CAP_SENSE_STATE_RISE )
+  {
+
+    // DEBUG
+    height_data[ HEIGHT_DATA_DEBUG ] |= 2;
+
+    if ( !(++time_rise_l) &&
+         !(++time_rise_h) &&
+         !(++time_rise_hh) )
+      ovf = 1;
+
+    if (ovf == 1)
+      height_data[ HEIGHT_DATA_CAP_SENSE_OVF ] |= 1;
+
+  }
+  else if (cap_sense_state == CAP_SENSE_STATE_FALL )
+  {
+
+    // DEBUG
+    height_data[ HEIGHT_DATA_DEBUG ] |= 4;
+
+    if ( !(++time_fall_l) &&
+         !(++time_fall_h) &&
+         !(++time_fall_hh) )
+      ovf = 1;
+
+    if (ovf == 1)
+      height_data[ HEIGHT_DATA_CAP_SENSE_OVF ] |= 2;
+
+  }
+
+
+}
+
+/* ------------------------------------------------------------------------- */
+
+ISR(PCINT1_vect)
+{
+  
+  //DEBUG
+  height_data[ HEIGHT_DATA_DEBUG ] |= 8;
+
+  if ( cap_sense_state == CAP_SENSE_STATE_RISE )
+  {
+
+    //DEBUG
+    height_data[ HEIGHT_DATA_DEBUG ] |= 16;
+
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_HH ] = time_rise_hh;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_H  ] = time_rise_h;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_L  ] = time_rise_l;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_L  ] = TCNT1L;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_H  ] = TCNT1H;
+    cap_sense_state = CAP_SENSE_STATE_FALL;
+
+    time_fall_hh = time_fall_h = time_fall_l = 0;
+
+    TCNT1H = 0;
+    TCNT1L = 0;
+  }
+  else if ( cap_sense_state == CAP_SENSE_STATE_FALL )
+  {
+
+    //DEBUG
+    height_data[ HEIGHT_DATA_DEBUG ] |= 32;
+
+    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_HH ] = time_fall_hh;
+    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_H  ] = time_fall_h;
+    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_L  ] = time_fall_l;
+    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_L  ] = TCNT1L;
+    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_H  ] = TCNT1H;
+    cap_sense_state = CAP_SENSE_STATE_RISE;
+
+    time_rise_hh = time_rise_h = time_rise_l = 0;
+
+    TCNT1H = 0;
+    TCNT1L = 0;
+  }
+
+}
+
+
+
+/* ------------------------------------------------------------------------- */
+
 int main(void) {
   uchar   i;
+
+  cap_sense_state = CAP_SENSE_STATE_STOP;
 
   height_data_ready = 1;
   continuity = 0;
@@ -150,13 +281,49 @@ int main(void) {
 
   /* ADC init */
   DDRB |= 0x06;
+  // neuter adc for now while we test timer1/pcint1
+  /*
   ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // Set ADC prescaler to 128 
-  ADMUX |= (1<<REFS0) | (1<<ADLAR); // Left adjust ADC result to allow easy 8 bit reading 
+  ADMUX |= (1<<REFS0) | (1<<ADLAR); // Left adjust ADC result to allow easy 8 bit reading, c0
   ADCSRA |= (1 << ADATE);  // free running source?
   ADCSRA |= (1 << ADEN);  // Enable ADC 
   ADCSRA |= (1 << ADIE);  // Enable ADC Interrupt 
+  */
 
+  /* ... */
   usbDeviceConnect();
+
+  /* TIMER1 init */
+  TCCR1A = 0x00;
+  TCCR1B = 0x00;
+
+  TIMSK1  = ( 1 << TOIE1 );
+  TCCR1B |= ( 1 << CS10  );
+
+  TCNT1H = 0;
+  TCNT1L = 0;
+
+  time_rise_l = 0;
+  time_rise_h = 0;
+  time_rise_hh = 0;
+
+  time_fall_l = 0;
+  time_fall_h = 0;
+  time_fall_hh = 0;
+
+
+  /* PCINT on PC0 */
+  PCICR |= _BV(PCIE1);
+  PCMSK1 |= _BV(PCINT8);  // pinc0 
+
+  cap_sense_state = CAP_SENSE_STATE_RISE;
+
+  usb_rx_flag = 0;
+
+
+  // DEBUG
+  height_data[ HEIGHT_DATA_DEBUG ] = 0;
+
   sei();
 
   ADCSRA |= (1 << ADSC);  // Start A2D Conversions 
@@ -171,7 +338,7 @@ int main(void) {
       PORTB |= (1 << 1); // Turn on LED1 
       PORTB &= ~(1 << 2); // Turn off LED2 
       height_data_ready = 0;
-      height_data[0] |= 0x01;
+      height_data[ HEIGHT_DATA_FLAG ] |= 0x01;
       height_data_ready = 1;
     }
     else
@@ -179,14 +346,10 @@ int main(void) {
       PORTB &= ~(1 << 1); // Turn off LED1 
       PORTB |= (1 << 2); // Turn on LED2 
       height_data_ready = 0;
-      height_data[0] &= 0xfe;
+      height_data[ HEIGHT_DATA_FLAG ] &= 0xfe;
       height_data_ready = 1;
     }
 
-    //if (adc_flag==1) {
-      //adc_flag=0;
-      //ADCSRA |= (1 << ADSC);  // Start A2D Conversions 
-    //}
 
     usbPoll();
 
