@@ -41,7 +41,12 @@ enum height_data_pos {
   HEIGHT_DATA_CAP_SENSE_COUNTER,
   HEIGHT_DATA_CAP_SENSE_OVF,
 
-  HEIGHT_DATA_DEBUG
+  HEIGHT_DATA_DEBUG,
+
+  HEIGHT_DATA_COUNTER_HH,
+  HEIGHT_DATA_COUNTER_H,
+  HEIGHT_DATA_COUNTER_L
+
 
 
 };
@@ -50,13 +55,17 @@ volatile unsigned char usb_rx_flag;
 
 enum cap_sense_state_enum {
   CAP_SENSE_STATE_RISE = 1,
+  CAP_SENSE_STATE_HI,
   CAP_SENSE_STATE_FALL,
+  CAP_SENSE_STATE_LO,
   CAP_SENSE_STATE_STOP
 };
 
 volatile unsigned char cap_sense_state;
+volatile unsigned char cap_sense_state_ready;
 volatile unsigned char time_rise_l, time_rise_h, time_rise_hh;
 volatile unsigned char time_fall_l, time_fall_h, time_fall_hh;
+volatile unsigned char time_counter_l, time_counter_h;
 
 /* ------------------------------------------------------------------------- */
 /* ----------------------------- USB interface ----------------------------- */
@@ -157,29 +166,55 @@ ISR(ADC_vect)
 
 /* ------------------------------------------------------------------------- */
 
-volatile char ovf;
+volatile unsigned char ovf;
 
 ISR(TIMER1_OVF_vect)
 {
 
+
   // DEBUG
   height_data[ HEIGHT_DATA_DEBUG ] |= 1;
 
+  if ( !(++height_data[ HEIGHT_DATA_COUNTER_L ]) &&
+       !(++height_data[ HEIGHT_DATA_COUNTER_H ]) &&
+       !(++height_data[ HEIGHT_DATA_COUNTER_HH ]) )
+  {
+  }
+
   ovf = 0;
 
-  if (cap_sense_state == CAP_SENSE_STATE_RISE )
+  if (cap_sense_state == CAP_SENSE_STATE_LO )
+  {
+
+    // DEBUG
+    height_data[ HEIGHT_DATA_DEBUG ] |= 64;
+
+    if ( !(++time_counter_l) )
+      cap_sense_state_ready = 1;
+
+  }
+  else if (cap_sense_state == CAP_SENSE_STATE_RISE )
   {
 
     // DEBUG
     height_data[ HEIGHT_DATA_DEBUG ] |= 2;
 
-    if ( !(++time_rise_l) &&
-         !(++time_rise_h) &&
-         !(++time_rise_hh) )
+    if ( !(++time_rise_l) )
       ovf = 1;
 
+    // continuity ?
     if (ovf == 1)
       height_data[ HEIGHT_DATA_CAP_SENSE_OVF ] |= 1;
+
+  }
+  else if (cap_sense_state == CAP_SENSE_STATE_HI )
+  {
+
+    // DEBUG
+    height_data[ HEIGHT_DATA_DEBUG ] |= 128;
+
+    if ( !(++time_counter_l) )
+      cap_sense_state_ready = 1;
 
   }
   else if (cap_sense_state == CAP_SENSE_STATE_FALL )
@@ -188,9 +223,7 @@ ISR(TIMER1_OVF_vect)
     // DEBUG
     height_data[ HEIGHT_DATA_DEBUG ] |= 4;
 
-    if ( !(++time_fall_l) &&
-         !(++time_fall_h) &&
-         !(++time_fall_hh) )
+    if ( !(++time_rise_l) )
       ovf = 1;
 
     if (ovf == 1)
@@ -206,45 +239,37 @@ ISR(TIMER1_OVF_vect)
 ISR(PCINT1_vect)
 {
   
-  //DEBUG
-  height_data[ HEIGHT_DATA_DEBUG ] |= 8;
-
   if ( cap_sense_state == CAP_SENSE_STATE_RISE )
   {
+
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_L  ] = TCNT1L;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_H  ] = TCNT1H;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_HH ] = time_rise_hh;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_H  ] = time_rise_h;
+    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_L  ] = time_rise_l;
+    cap_sense_state_ready = 1;
 
     //DEBUG
     height_data[ HEIGHT_DATA_DEBUG ] |= 16;
 
-    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_HH ] = time_rise_hh;
-    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_H  ] = time_rise_h;
-    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_L  ] = time_rise_l;
-    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_L  ] = TCNT1L;
-    height_data[ HEIGHT_DATA_CAP_SENSE_RISE_TIMER1_H  ] = TCNT1H;
-    cap_sense_state = CAP_SENSE_STATE_FALL;
-
-    time_fall_hh = time_fall_h = time_fall_l = 0;
-
-    TCNT1H = 0;
-    TCNT1L = 0;
   }
   else if ( cap_sense_state == CAP_SENSE_STATE_FALL )
   {
 
-    //DEBUG
-    height_data[ HEIGHT_DATA_DEBUG ] |= 32;
-
+    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_L  ] = TCNT1L;
+    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_H  ] = TCNT1H;
     height_data[ HEIGHT_DATA_CAP_SENSE_FALL_HH ] = time_fall_hh;
     height_data[ HEIGHT_DATA_CAP_SENSE_FALL_H  ] = time_fall_h;
     height_data[ HEIGHT_DATA_CAP_SENSE_FALL_L  ] = time_fall_l;
-    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_L  ] = TCNT1L;
-    height_data[ HEIGHT_DATA_CAP_SENSE_FALL_TIMER1_H  ] = TCNT1H;
-    cap_sense_state = CAP_SENSE_STATE_RISE;
+    cap_sense_state_ready = 1;
 
-    time_rise_hh = time_rise_h = time_rise_l = 0;
+    //DEBUG
+    height_data[ HEIGHT_DATA_DEBUG ] |= 32;
 
-    TCNT1H = 0;
-    TCNT1L = 0;
   }
+
+  //DEBUG
+  height_data[ HEIGHT_DATA_DEBUG ] |= 8;
 
 }
 
@@ -316,22 +341,93 @@ int main(void) {
   PCICR |= _BV(PCIE1);
   PCMSK1 |= _BV(PCINT8);  // pinc0 
 
-  cap_sense_state = CAP_SENSE_STATE_RISE;
+  DDRC |= (1 << PC1);
 
+  cap_sense_state = CAP_SENSE_STATE_LO;
+  cap_sense_state_ready = 0;
+  time_counter_l = time_counter_h = 0;
+  TCNT1H = 0;
+  TCNT1L = 0;
+
+
+  /* usb feedback */
   usb_rx_flag = 0;
 
 
   // DEBUG
   height_data[ HEIGHT_DATA_DEBUG ] = 0;
+  height_data[ HEIGHT_DATA_COUNTER_HH ] = 0;
+  height_data[ HEIGHT_DATA_COUNTER_H ] = 0;
+  height_data[ HEIGHT_DATA_COUNTER_L ] = 0;
 
   sei();
 
-  ADCSRA |= (1 << ADSC);  // Start A2D Conversions 
+  // neuter adc for now while we test timer1/pcint1
+  /*
+  ADCSRA |= (1 << ADSC);  // analog digital start conversion
+  */
 
   for(;;)
   {                /* main event loop */
 
     wdt_reset();
+
+    if ( cap_sense_state == CAP_SENSE_STATE_LO )
+    {
+
+      cli();
+      if (cap_sense_state_ready)
+      {
+        cap_sense_state_ready = 0;
+        cap_sense_state = CAP_SENSE_STATE_RISE;
+        time_rise_hh = time_rise_h = time_rise_l = 0;
+        TCNT1H = 0;
+        TCNT1L = 0;
+        PORTC |= ( 1 << PC1 );
+      }
+      sei();
+
+    }
+    else if ( cap_sense_state == CAP_SENSE_STATE_RISE )
+    {
+
+      cli();
+      if (cap_sense_state_ready)
+      {
+        cap_sense_state_ready = 0;
+        cap_sense_state = CAP_SENSE_STATE_HI;
+      }
+      sei();
+
+    }
+    else if ( cap_sense_state == CAP_SENSE_STATE_HI )
+    {
+
+      cli();
+      if (cap_sense_state_ready)
+      {
+        cap_sense_state_ready = 0;
+        cap_sense_state = CAP_SENSE_STATE_FALL;
+        time_fall_hh = time_fall_h = time_fall_l = 0;
+        TCNT1H = 0;
+        TCNT1L = 0;
+        PORTC &= ~( 1 << PC1 );
+      }
+      sei();
+
+    }
+    else if ( cap_sense_state == CAP_SENSE_STATE_FALL )
+    {
+
+      cli();
+      if (cap_sense_state_ready)
+      {
+        cap_sense_state_ready = 0;
+        cap_sense_state = CAP_SENSE_STATE_LO;
+      }
+      sei();
+
+    }
 
     if(continuity) 
     {
