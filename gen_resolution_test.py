@@ -222,11 +222,13 @@ def draw_hor_test( pitch, x_start, y_start, length, n_lines, break_segment_lengt
     n_segment = int( abs((final_x - cur_x) / break_segment_length) ) + 1
 
     for x in numpy.linspace(cur_x, final_x, n_segment):
-      print "( hor, x", str(x), ", y", str(cur_y), ")"
+      #print "( hor, x", str(x), ", y", str(cur_y), ")"
       print "g1 x" + str(x), "y" + str(cur_y)
     print "g1 x" + str(final_x), "y" + str(cur_y)
 
   # outline the traces
+  print
+  print "( outline traces )"
   print "g1 z" + str(z_up)
   print "g0 x" + str(x_start), "y" + str(y_start)
 
@@ -240,7 +242,7 @@ def draw_hor_test( pitch, x_start, y_start, length, n_lines, break_segment_lengt
   print "g1 x" + str(x_start + length), "y" + str(y_start)
 
   print "g1 z" + str(z_up)
-  print "g1 x" + str(x_start), "y" + str(y_start)
+  print "g0 x" + str(x_start), "y" + str(y_start)
 
 
 def draw_ver_test( pitch, x_start, y_start, length, n_lines, break_segment_length = 0.1 ):
@@ -266,14 +268,16 @@ def draw_ver_test( pitch, x_start, y_start, length, n_lines, break_segment_lengt
       final_y += length
 
     n_segment = int( abs((final_y - cur_y) / break_segment_length) ) + 1
-    print "( ver, final_y", str(final_y), ", cur_y", str(cur_y), ", break_segment_length", str(break_segment_length), ", n_segment", str(n_segment), ")"
+    #print "( ver, final_y", str(final_y), ", cur_y", str(cur_y), ", break_segment_length", str(break_segment_length), ", n_segment", str(n_segment), ")"
 
     for y in numpy.linspace(cur_y, final_y, n_segment):
-      print "( ver , x", str(cur_x), ", y", str(y), ")"
+      #print "( ver, x", str(cur_x), ", y", str(y), ")"
       print "g1 x" + str(cur_x), "y" + str(y)
     print "g1 x" + str(cur_x), "y" + str(final_y)
 
   # outline the traces
+  print
+  print "( outline traces )"
   print "g1 z" + str(z_up)
   print "g0 x" + str(x_start), "y" + str(y_start)
 
@@ -289,7 +293,9 @@ def draw_ver_test( pitch, x_start, y_start, length, n_lines, break_segment_lengt
   print "g1 z" + str(z_up)
   print "g0 x" + str(x_start), "y" + str(y_start)
 
-pitches_mil = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ]
+#pitches_mil = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ]
+#pitches_mil = [ 5, 6, 7, 8, 9, 10, 11, 12 ]
+pitches_mil = [ 13, 14, 15, 16, 17, 18, 19, 20 ]
 
 n_lines = 10
 length = 0.5
@@ -301,25 +307,34 @@ start_y = 0.0
 
 break_segment = 0.1
 
-print "g0 f100"
-print "g1 f100"
+print "g20"
+print "( g0 f100 )"
+print "( g1 f20 )"
 
 #pitch = 20.0 / 1000.0
 #pitch_mil = int(pitch * 1000.0)
 
 count=0
 count_vertical = 0
-count_mod = 4
+#count_mod = 4
+count_mod = 2
 
 for pitch_mil in pitches_mil:
 
   pitch = float(pitch_mil) / 1000.0
 
+  print
+  print "( vertical test block: pitch", str(pitch_mil), ", start_x", str(start_x), ", start_y", str(start_y), ", length", str(length), ", n_lines", str(n_lines), ", break_segment", str(break_segment)
   draw_ver_test( pitch, start_x, start_y, length, n_lines, break_segment )
 
   start_x += (float(n_lines) * pitch) + 0.1
+
+  print
+  print "( horizontal test block: pitch", str(pitch_mil), ", start_x", str(start_x), ", start_y", str(start_y), ", length", str(length), ", n_lines", str(n_lines), ", break_segment", str(break_segment)
   draw_hor_test( pitch, start_x, start_y, length, n_lines, break_segment )
 
+  print
+  print "( draw number:", str(pitch_mil), ")"
   draw_num_simple( pitch_mil, start_x, start_y + length - num_size, num_size, num_size, num_space, break_segment )
 
   start_x += length + 0.1

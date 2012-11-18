@@ -35,8 +35,10 @@ observed_z_max = z_min
 
 x_min = 0.0
 #x_max = 80.0
-x_max = 100.0
-x_tic = 20 + 1
+#x_max = 100.0
+#x_tic = 20 + 1
+x_max = 50.0
+x_tic = 10 + 1
 
 y_min = 0.0
 #y_max = 40.0
@@ -164,7 +166,8 @@ for x in numpy.linspace(x_min, x_max, x_tic):
     #z_tic = int( round( ((z_max - z_min) / z_del) + 0.5 ) )
     z_tic = int( round( ((cur_z_start - z_min) / z_del) + 0.5 ) )
 
-    for z in numpy.linspace(z_max, z_min, z_tic):
+    #for z in numpy.linspace(z_max, z_min, z_tic):
+    for z in numpy.linspace(cur_z_start, z_min, z_tic):
       if verbose:
         print "#  positioning z", z
       send_grbl_command( "g1z"+str(z) )
