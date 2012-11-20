@@ -162,26 +162,28 @@ z_plunge = -0.002
 for line in gc:
   l = line.rstrip('\n')
   m = re.match('^\s*\(', l)
+
+  #print "( line: ", l, " )"
   if m:
     #print l
     continue
 
-  m = re.match('^\s*[gG](0*[01])[^\d]', l)
+  m = re.match('^\s*[gG]\s*(0*[01])[^\d]', l)
   if m:
     g01 = m.group(1)
     #print "g", g01, "match: ", l
 
-    m = re.match('.*[xX](-?\d+(\.\d+)?)', l)
+    m = re.match('.*[xX]\s*(-?\d+(\.\d+)?)', l)
     if m:
       cur_x = m.group(1)
       #print "  got x match", cur_x
 
-    m = re.match('.*[yY](-?\d+(\.\d+)?)', l)
+    m = re.match('.*[yY]\s*(-?\d+(\.\d+)?)', l)
     if m:
       cur_y = m.group(1)
       #print "  got y match", cur_y
 
-    m = re.match('.*[zZ](-?\d+(\.\d+)?)', l)
+    m = re.match('.*[zZ]\s*(-?\d+(\.\d+)?)', l)
     if m:
       cur_z = m.group(1)
       #print "  got z match", cur_z
@@ -232,7 +234,8 @@ for line in gc:
       #print "g" + g01, "x" + cur_x, "y" + cur_y, "z" + str(interpolated_z)
       print "g" + g01, "x{0:.8f}".format(x_f), "y{0:.8f}".format(y_f), "z{0:.8f}".format(interpolated_z)
       #print cur_x, cur_y, str(interpolated_z)
-
+  else:
+    print l
 
 
 gc.close()
