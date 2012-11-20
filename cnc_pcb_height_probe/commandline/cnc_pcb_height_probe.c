@@ -63,7 +63,9 @@ FILE    *fp = stdout;
                 fprintf(fp, " ");
             }
         }
-        fprintf(fp, "0x%02x", buffer[i] & 0xff);
+	if (buffer[i])
+          fprintf(fp, "0x%02x", buffer[i] & 0xff);
+        else fprintf(fp, "....");
     }
     if(i != 0)
         fprintf(fp, "\n");

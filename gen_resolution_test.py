@@ -289,7 +289,9 @@ def draw_ver_test( pitch, x_start, y_start, length, n_lines, break_segment_lengt
   print "g1 z" + str(z_up)
   print "g0 x" + str(x_start), "y" + str(y_start)
 
-pitches_mil = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ]
+#pitches_mil = [ 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 ]
+#pitches_mil = [ 5, 6, 7, 8, 9, 10, 11, 12 ]
+pitches_mil = [ 13, 14, 15, 16, 17, 18, 19, 20 ]
 
 n_lines = 10
 length = 0.5
@@ -301,15 +303,19 @@ start_y = 0.0
 
 break_segment = 0.1
 
-print "g0 f100"
-print "g1 f100"
+#print "g0 f100"
+#print "g1 f100"
+print "g20"
+print "( g0 f100 )"
+print "( g1 f100 )"
 
 #pitch = 20.0 / 1000.0
 #pitch_mil = int(pitch * 1000.0)
 
 count=0
 count_vertical = 0
-count_mod = 4
+#count_mod = 4
+count_mod = 2
 
 for pitch_mil in pitches_mil:
 

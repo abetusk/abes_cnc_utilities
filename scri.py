@@ -155,7 +155,9 @@ for kv in grid.items():
 
 cur_x, cur_y, cur_z  = 0, 0, 0
 z_pos = 'up'
-z_threhold = 0.0
+z_threshold = 0.0
+
+z_plunge = -0.002
 
 for line in gc:
   l = line.rstrip('\n')
@@ -218,7 +220,17 @@ for line in gc:
       p = scri( [ s_x, s_y ], subgrid )
       interpolated_z = p[2]
 
-      print "g" + g01, "x" + cur_x, "y" + cur_y, "z" + str(interpolated_z)
+      interpolated_z += z_plunge
+
+      #x_formatted = "{0:.8f}".format(cur_x)
+      #y_formatted = "{0:.8f}".format(cur_y)
+      #z_formatted = "{0:.8f}".format(interpolated_z)
+      x_f = float(cur_x)
+      y_f = float(cur_y)
+
+
+      #print "g" + g01, "x" + cur_x, "y" + cur_y, "z" + str(interpolated_z)
+      print "g" + g01, "x{0:.8f}".format(x_f), "y{0:.8f}".format(y_f), "z{0:.8f}".format(interpolated_z)
       #print cur_x, cur_y, str(interpolated_z)
 
 
