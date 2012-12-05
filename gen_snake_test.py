@@ -2,11 +2,43 @@
 
 import sys
 import numpy
+import math
+
+###############################
+
+def draw_line( l, break_segment_length = 0.1 ):
+  #x0, y0, x1, y1 ):
+  x0 = l[0]
+  y0 = l[1]
+  x1 = l[2]
+  y1 = l[3]
+  print "g1 z" + str(z_up)
+  print "g0 x" + str(x0) + " y" + str(y0)
+  print "g1 z" + str(z_plunge)
+
+  dx = x1 - x0
+  dy = y1 - y0
+
+  dl = math.sqrt( (dx*dx) + (dy*dy) )
+
+  n_segment = dl / break_segment_length
+
+  for v in numpy.linspace(0, dl, n_segment):
+    x = ( (x1-x0)*v / dl ) + x0
+    y = ( (y1-y0)*v / dl ) + y0
+    print "g1 x" + str(x) + " y" + str(y)
+
+  print "g1 x" + str(x1) + " y" + str(y1)
+  print "g1 z" + str(z_up)
+
+###############################
 
 n_tracks = 50
 #n_tracks = 10
 mil = 20
 odd_even = 1
+
+break_segment_length = 0.1  # inches
 
 z_up = 0.01
 z_plunge = -0.002
@@ -25,6 +57,7 @@ x_start = (pad_width + connection_length)/1000.0
 x_end = x_start + float(n_tracks)*mil/1000.0
 
 x = x_start
+
 
 print "g20"
 print
@@ -53,62 +86,69 @@ print "g1 z" + str(z_up)
 print "g0 x" + str(x), "y" + str(y_end_m_mil)
 print 
 
+y = y_end_m_mil
+dest_x = x
+dest_y = -1.0
+
 for i in range(n_tracks):
 
   print "( channel", str(i), "of", str(n_tracks), ")"
-  print "g1 z" + str(z_plunge)
 
   if (i%2):
-    print "g1 x" + str(x), "y" + str(y_end)
+    dest_y = y_end
   else:
-    print "g1 x" + str(x), "y" + str(y_start)
+    dest_y = y_start
 
-  print "g1 z" + str(z_up)
+  draw_line( [ x, y, x, dest_y ],  break_segment_length)
+  y = dest_y
 
   x = float(i+1)*mil/1000.0 + x_start
 
   if (i%2):
     print "g0 x" + str(x), "y" + str(y_end_m_mil)
+    y = y_end_m_mil
   else:
     print "g0 x" + str(x), "y" + str(y_start_p_mil)
+    y = y_start_p_mil
 
   print
+
 
 print
 print "( last channel )"
-print "g1 z" + str(z_plunge)
 if (n_tracks%2):
-  print "g1 x" + str(x), "y" + str(y_end)
+  dest_y = y_end
 else:
-  print "g1 x" + str(x), "y" + str(y_start)
+  dest_y = y_start
+
+draw_line( [ x, y, x, dest_y ],  break_segment_length)
+cur_y = dest_y
+
 print
 
 
 if (n_tracks%2):
   print "( top row )"
-  print "g1 x" + str(x_start), "y" + str(y_end)
-
-  print
-  print "g1 z" + str(z_up)
-  print
+  draw_line( [ x_end, y_end, x_start, y_end ],  break_segment_length)
+  x = x_start
+  y = y_end
 
   print "( bottom row )"
-  print "g0 x" + str(x_start), "y" + str(y_start)
-  print "g1 z" + str(z_plunge)
-  print "g1 x" + str(x_end), "y" + str(y_start)
+
+  draw_line( [ x_start, y_start, x_end, y_start ] , break_segment_length) 
+  x = x_end
+  y = y_start
 
 else:
   print "( bottom row )"
-  print "g1 x" + str(x_start), "y" + str(y_start)
-
-  print
-  print "g1 z" + str(z_up)
-  print
+  draw_line( [ x_end, y_start, x_start, y_start ], break_segment_length )
+  x = x_start
+  y = y_start
 
   print "( top row )"
-  print "g0 x" + str(x_start), "y" + str(y_end)
-  print "g1 z" + str(z_plunge)
-  print "g1 x" + str(x_end), "y" + str(y_end)
+  draw_line( [ x_start, y_end, x_end, y_end ] , break_segment_length )
+  x = x_end
+  y = y_end
 
 print 
 print "g1 z" + str(z_up)
