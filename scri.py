@@ -114,7 +114,7 @@ for x in x_pnt_list:
 s += ")"
 print s
 
-s = "( x:"
+s = "( y:"
 for y in y_pnt_list:
   s += " " + str(y)
 s += ")"
@@ -165,7 +165,7 @@ for line in gc:
 
   #print "( line: ", l, " )"
   if m:
-    #print l
+    print l
     continue
 
   m = re.match('^\s*[gG]\s*(0*[01])[^\d]', l)
@@ -189,10 +189,10 @@ for line in gc:
       #print "  got z match", cur_z
 
       if ( float(cur_z) >= z_threshold ):
-        print "( z up )"
+        #print "( z up )"
         z_pos = 'up'
       else:
-        print "( z down )"
+        #print "( z down )"
         z_pos = 'down'
 
       #print "z_pos:", z_pos
