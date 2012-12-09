@@ -84,6 +84,7 @@ for o, a in opts:
   else:
     assert False, "unhandled option"
 
+
 #print gcode_file, height_map_file
 
 grid = {}
@@ -122,6 +123,7 @@ print s
 
 
 print "( del_x", str(del_x), ", del_y", str(del_y), ")"
+print "( z_threshold", str(z_threshold), ")"
 
 
 # closest to left
@@ -155,87 +157,111 @@ for kv in grid.items():
 
 cur_x, cur_y, cur_z  = 0, 0, 0
 z_pos = 'up'
-z_threshold = 0.0
 
-z_plunge = -0.002
+z_plunge_inch = -0.002
+z_plunge_mm   = -0.0508
+
+unit = "inch"
+
+g_mode = ""
 
 for line in gc:
-  l = line.rstrip('\n')
-  m = re.match('^\s*\(', l)
+  is_move = 0
 
-  #print "( line: ", l, " )"
+  l = line.rstrip('\n')
+
+  # skip comments
+  # assumes comments encased in parens all on one line 
+  #m = re.match('^\s*\(', l)
+  m = re.match('^\s*(\(|;)', l)
+
   if m:
     print l
     continue
 
-  m = re.match('^\s*[gG]\s*(0*[01])[^\d]', l)
+  m = re.match('^\s*[gG]\s*(0*\d*)([^\d]|$)', l)
   if m:
-    g01 = m.group(1)
-    #print "g", g01, "match: ", l
+    tmp_mode = m.group(1)
+    if re.match('^0*20$', tmp_mode):
+      unit = "inch"
+    elif re.match('^0*21$', tmp_mode):
+      unit = "mm"
 
-    m = re.match('.*[xX]\s*(-?\d+(\.\d+)?)', l)
-    if m:
-      cur_x = m.group(1)
-      #print "  got x match", cur_x
+  m = re.match('^\s*[gG]\s*(0*[01])[^\d](.*)', l)
+  if m:
+    g_mode = m.group(1)
+    l = m.group(2)
 
-    m = re.match('.*[yY]\s*(-?\d+(\.\d+)?)', l)
-    if m:
-      cur_y = m.group(1)
-      #print "  got y match", cur_y
+    print "( g_mode now", g_mode, ")"
 
-    m = re.match('.*[zZ]\s*(-?\d+(\.\d+)?)', l)
-    if m:
-      cur_z = m.group(1)
-      #print "  got z match", cur_z
+  m = re.match('.*[xX]\s*(-?\d+(\.\d+)?)', l)
+  if m:
+    is_move = 1
+    cur_x = m.group(1)
 
-      if ( float(cur_z) >= z_threshold ):
-        #print "( z up )"
-        z_pos = 'up'
-      else:
-        #print "( z down )"
-        z_pos = 'down'
+  m = re.match('.*[yY]\s*(-?\d+(\.\d+)?)', l)
+  if m:
+    is_move = 1
+    cur_y = m.group(1)
 
-      #print "z_pos:", z_pos
+  m = re.match('.*[zZ]\s*(-?\d+(\.\d+)?)', l)
+  if m:
+    is_move = 1
+    cur_z = m.group(1)
 
-    if (z_pos == 'up'):
-      print l
-    elif (z_pos == 'down'):
-      x_ind = get_list_index( cur_x, x_pnt_list )
-      y_ind = get_list_index( cur_y, y_pnt_list )
+    if ( float(cur_z) >= z_threshold ):
+      z_pos = 'up'
+    else:
+      z_pos = 'down'
 
-      subgrid = [ [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] ]
-      for i in range(0, 4):
-        for j in range(0, 4):
-          x_pos = clamp(x_ind + i - 1, 0, len(x_pnt_list)-1)
-          x_val = x_pnt_list[ x_pos ]
-            
-          y_pos = clamp(y_ind + j - 1, 0, len(y_pnt_list)-1)
-          y_val = y_pnt_list[ y_pos ]
+  if is_move and (not g_mode):
+    print "ERROR: g_mode not initialized"
+    sys.exit(0)
 
-          key = str(x_val) + ":" + str(y_val)
-          val = grid[key]
-          subgrid[i][j] = [ x_val, y_val, val[2] ]
-          #print "#", subgrid[i][j]
-
-      s_x = (float(cur_x) - float(x_pnt_list[x_ind]) ) / del_x
-      s_y = (float(cur_y) - float(y_pnt_list[y_ind]) ) / del_y
-      p = scri( [ s_x, s_y ], subgrid )
-      interpolated_z = p[2]
-
-      interpolated_z += z_plunge
-
-      #x_formatted = "{0:.8f}".format(cur_x)
-      #y_formatted = "{0:.8f}".format(cur_y)
-      #z_formatted = "{0:.8f}".format(interpolated_z)
-      x_f = float(cur_x)
-      y_f = float(cur_y)
-
-
-      #print "g" + g01, "x" + cur_x, "y" + cur_y, "z" + str(interpolated_z)
-      print "g" + g01, "x{0:.8f}".format(x_f), "y{0:.8f}".format(y_f), "z{0:.8f}".format(interpolated_z)
-      #print cur_x, cur_y, str(interpolated_z)
-  else:
+  if not is_move:
     print l
+    continue
+
+  if (z_pos == 'up'):
+    #print l
+    print "g" + str(g_mode), l
+  elif (z_pos == 'down'):
+    x_ind = get_list_index( cur_x, x_pnt_list )
+    y_ind = get_list_index( cur_y, y_pnt_list )
+
+    subgrid = [ [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0] ]
+    for i in range(0, 4):
+      for j in range(0, 4):
+        x_pos = clamp(x_ind + i - 1, 0, len(x_pnt_list)-1)
+        x_val = x_pnt_list[ x_pos ]
+          
+        y_pos = clamp(y_ind + j - 1, 0, len(y_pnt_list)-1)
+        y_val = y_pnt_list[ y_pos ]
+
+        key = str(x_val) + ":" + str(y_val)
+        val = grid[key]
+        subgrid[i][j] = [ x_val, y_val, val[2] ]
+        #print "#", subgrid[i][j]
+
+    s_x = (float(cur_x) - float(x_pnt_list[x_ind]) ) / del_x
+    s_y = (float(cur_y) - float(y_pnt_list[y_ind]) ) / del_y
+    p = scri( [ s_x, s_y ], subgrid )
+    interpolated_z = p[2]
+
+    if unit == "inch":
+      z_plunge = z_plunge_inch
+    elif unit == "mm":
+      z_plunge = z_plunge_mm
+    else:
+      print "ERROR: unit improperly set"
+      sys.exit(0)
+
+    interpolated_z += z_plunge
+
+    x_f = float(cur_x)
+    y_f = float(cur_y)
+
+    print "g" + g_mode, "x{0:.8f}".format(x_f), "y{0:.8f}".format(y_f), "z{0:.8f}".format(interpolated_z)
 
 
 gc.close()
