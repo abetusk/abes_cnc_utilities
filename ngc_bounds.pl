@@ -28,6 +28,11 @@ while (<FIL>)
 {
   my $l = $_;
 
+  $l =~ s/;.*//;
+  $l =~ s/\([^)]*\)//g;
+
+  print "l now '$l'\n";
+
   my $g_line = $l;
   while ($g_line =~ /[gG]\s*2([01])/)
   {
