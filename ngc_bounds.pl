@@ -31,8 +31,6 @@ while (<FIL>)
   $l =~ s/;.*//;
   $l =~ s/\([^)]*\)//g;
 
-  print "l now '$l'\n";
-
   my $g_line = $l;
   while ($g_line =~ /[gG]\s*2([01])/)
   {
@@ -45,10 +43,10 @@ while (<FIL>)
   while ($g_line =~ /[xX]\s*(-?\d+(\.\d+)?)/)
   {
     my $x = $1;
-    my $x_mm = ( $is_mm ? $x : ($x / 25.4) );
+    my $x_mm = ( $is_mm ? $x : ($x * 25.4) );
     if (!$have_x)
     {
-      $x_min_mm = ( $is_mm ? $x : ($x / 25.4) );
+      $x_min_mm = $x_mm;
       $x_max_mm = $x_min_mm;
       $have_x = 1;
     }
@@ -64,7 +62,7 @@ while (<FIL>)
   while ($g_line =~ /[yY]\s*(-?\d+(\.\d+)?)/)
   {
     my $y = $1;
-    my $y_mm = ( $is_mm ? $y : ($y / 25.4) );
+    my $y_mm = ( $is_mm ? $y : ($y * 25.4) );
     if (!$have_y)
     {
       $y_min_mm = $y_mm;
@@ -83,7 +81,7 @@ while (<FIL>)
   while ($g_line =~ /[zZ]\s*(-?\d+(\.\d+)?)/)
   {
     my $z = $1;
-    my $z_mm = ( $is_mm ? $z : ($z / 25.4) );
+    my $z_mm = ( $is_mm ? $z : ($z * 25.4) );
     if (!$have_z)
     {
       $z_min_mm = $z_mm;
