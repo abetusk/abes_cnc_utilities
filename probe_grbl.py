@@ -37,6 +37,6 @@ send_grbl_command( "" )
 send_grbl_command( "" )
 
 send_grbl_command( "$" )
-send_grbl_command( "$?" )
+send_grbl_command( "?" )
 
 
