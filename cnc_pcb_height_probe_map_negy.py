@@ -43,10 +43,18 @@ x_tic = 10 + 1
 #x_max = 55.0
 #x_tic = 11 + 1
 
-y_min = 0.0
-#y_max = 40.0
-y_max = 60.0
-y_tic = 12 + 1
+
+y_min = -70.0
+y_max = 0.0
+y_tic = 14 + 1
+
+#y_min = -60.0
+#y_max = 0.0
+#y_tic = 12 + 1
+
+#y_min = -50.0
+#y_max = 0.0
+#y_tic = 10 + 1
 
 verbose = 0
 
@@ -147,6 +155,7 @@ for x in numpy.linspace(x_min, x_max, x_tic):
   for y in numpy.linspace(y_start, y_end, y_tic):
     #time.sleep(.1)
     time.sleep(.05)
+
     if verbose:
       print "# starting probe for x", x, "y", y, "(z", z_max, ")"
     send_grbl_command( "g1z" + str(z_max) )
@@ -196,7 +205,5 @@ for x in numpy.linspace(x_min, x_max, x_tic):
 
 send_grbl_command( "g1z" + str(z_max) )
 send_grbl_command( "g0x0y0" )
-
-
 
 
