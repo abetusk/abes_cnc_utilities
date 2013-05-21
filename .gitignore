@@ -1,6 +1,7 @@
 *.swp
 *~
 *.o
+/cnc_pcb_height_probe/commandline/cnc_pcb_height_probe
 bak
 save
 *.bak
