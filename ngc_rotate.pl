@@ -55,6 +55,14 @@ $state{prev_z} = undef;
 $state{g} = undef;
 $state{line_no} = 0;
 
+# transformed position
+$state{x_t} = undef;
+$state{prev_x_t} = undef;
+$state{y_t} = undef;
+$state{prev_y_t} = undef;
+$state{z_t} = undef;
+$state{prev_z_t} = undef;
+
 
 $state{del_x} = 1;
 $state{del_y} = 1;
@@ -319,29 +327,61 @@ sub state_z
 sub print_command
 {
 
-  print "g", $state{g} if ($state{line_flag} =~ m/:[g]/);
+  print "g", $state{g} if ($state{line_flag} =~ m/:[gG]/);
 
-  if ($state{line_flag} =~ m/:[xyzijp]/)
+  if ($state{line_flag} =~ m/:[xyzijpXYZIJP]/)
   {
 
     # we must print both x and y out, might as well print z (might rotate in future)
     my ($x_r, $y_r, $z_r) = rot($state{x}, $state{y}, $state{z});
-    print " x", sprintf("%4.8f", $x_r), " y", sprintf("%4.8f", $y_r), " z", sprintf("%4.8f", $z_r);
+
+    # but only print it out if it's changed
+    if ( ($state{line_flag} =~ /:[xX]/) or 
+         ( defined($state{x_t}) and 
+           $x_r != $state{x_t} ) )
+    {
+      print " x", sprintf("%4.8f", $x_r) 
+    }
+
+    if ( ($state{line_flag} =~ /:[yY]/) or 
+         ( defined($state{y_t}) and 
+           $y_r != $state{y_t} ) )
+    {
+      print " y", sprintf("%4.8f", $y_r) 
+    }
+
+    if ( ($state{line_flag} =~ /:[zZ]/) or 
+         ( defined($state{z_t}) and 
+           $z_r != $state{z_t} ) )
+    {
+      print " z", sprintf("%4.8f", $z_r) 
+    }
+
+    #print " y", sprintf("%4.8f", $y_r) if ( defined($state{y_t}) and $y_r != $state{y_t} );
+    #print " z", sprintf("%4.8f", $z_r) if ( $z_r == $state{z_t} );
+
+    $state{prev_x_t} = $state{x_t};
+    $state{x_t} = $x_r;
+    $state{prev_y_t} = $state{y_t};
+    $state{y_t} = $y_r;
+    $state{prev_z_t} = $state{z_t};
+    $state{z_t} = $z_r;
+
 
     # rotate i and j by appropriate amount
-    if ($state{line_flag} =~ m/:[ij]/)
+    if ($state{line_flag} =~ m/:[ijIJ]/)
     {
       my ($i_r, $j_r, $dummy) = rot($state{i}, $state{j}, 0.0);
       print " i", sprintf("%4.8f", $i_r),  " j", sprintf("%4.8f", $j_r);
     }
 
     # p left unmolested
-    print " p", $state{p} if ($state{line_flag} =~ m/[p]/);
+    print " p", $state{p} if ($state{line_flag} =~ m/:[pP]/);
   }
 
-  print " f", $state{f} if ($state{line_flag} =~ m/:[f]/);
-  print " s", $state{f} if ($state{line_flag} =~ m/:[s]/);
-  print " m", $state{f} if ($state{line_flag} =~ m/:[m]/);
+  print " f", $state{f} if ($state{line_flag} =~ m/:[fF]/);
+  print " s", $state{f} if ($state{line_flag} =~ m/:[sS]/);
+  print " m", $state{f} if ($state{line_flag} =~ m/:[mM]/);
 
 }
 

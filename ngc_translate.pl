@@ -183,13 +183,13 @@ sub state_g3 { my $l = shift; $state{g} = 3; }
 sub state_f
 {
   my $f = shift;
-  print "f$f\n";
+  print "f$f";
 }
 
 sub state_s
 {
   my $s = shift;
-  print "s$s\n";
+  print "s$s";
 }
 
 
@@ -198,31 +198,31 @@ sub state_g
   my $g = shift;
   $state{g} = $g;
 
-  print "g$g\n";
+  print "g$g";
 }
 
 sub state_m
 {
   my $m = shift;
-  print "m$m\n";
+  print "m$m";
 }
 
 sub state_i
 {
   my $i = shift;
-  print "i", sprintf("%4.8f", $s_scale*$i), "\n";
+  print "i", sprintf("%4.8f", $s_scale*$i) ;
 }
 
 sub state_j
 {
   my $j = shift;
-  print "j", sprintf("%4.8f", $s_scale*$j), "\n";
+  print "j", sprintf("%4.8f", $s_scale*$j) ;
 }
 
 sub state_p
 {
   my $p = shift;
-  print "p$p\n";
+  print "p$p";
 }
 
 sub state_x 
