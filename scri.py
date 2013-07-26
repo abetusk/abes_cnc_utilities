@@ -158,8 +158,9 @@ for kv in grid.items():
 cur_x, cur_y, cur_z  = 0, 0, 0
 z_pos = 'up'
 
-z_plunge_inch = -0.002
-z_plunge_mm   = -0.0508
+z_plunge_inch = -0.003
+z_plunge_mm = z_plunge_inch * 25.4
+#z_plunge_mm   = -0.0508
 
 unit = "inch"
 
