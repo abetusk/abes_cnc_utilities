@@ -23,9 +23,10 @@ device = "/dev/ttyUSB0"
 baud = 9600
 grbl_serial = None
 sleepy = 0.05            # seconds
-var_epsilon = 0.001
+var_epsilon = 0.005
 
 verbose = False
+#verbose = True
 
 def setup( dev = device, b = baud ):
   global device 
@@ -53,11 +54,18 @@ def send_command( cmd ) :
   ans = grbl_out
   if verbose:
     print "#  got :", grbl_out.strip()
+
+  if ( re.search("^error:", grbl_out) ):
+    return ans
+
   while ( not re.search("ok", grbl_out) ):
     grbl_out = grbl_serial.readline()
     if verbose:
       print "#  got:", grbl_out.strip()
     ans += grbl_out
+    if ( re.search("^error:", grbl_out) ):
+      return ans
+
   if verbose:
     print "#", grbl_out
   return ans
@@ -115,8 +123,6 @@ def wait_for_var_position( var_name, var_val ):
   global verbose
   global sleepy
   global var_epsilon
-  sleepy = 0.05
-  var_epsilon = 0.001
   cur_val = get_var_position( var_name )
   if verbose:
     print "#", str(var_val), " var_epsilon", str(var_epsilon), "cur_x", str(cur_val)
