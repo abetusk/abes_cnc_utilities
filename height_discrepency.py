@@ -2,6 +2,7 @@
 
 import sys
 import math
+import re
 
 if (len(sys.argv) < 3):
   sys.exit("provide filenames");
@@ -15,6 +16,13 @@ y_pnt = {}
 
 f0 = open(sys.argv[1], "r");
 for line in f0:
+  if re.match('^\s*#', line):
+    print "# skipping:", line
+    continue
+  if re.match('^\s*$', line):
+    print "# skipping:", line
+    continue
+  print "# processing:", line
   v = line.rsplit()
   k = str(float(v[0])) + ":" + str(float(v[1]))
   height0[k] = v[2]
@@ -24,6 +32,13 @@ f0.close()
 
 f1 = open(sys.argv[2], "r");
 for line in f1:
+  if re.match('^\s*#', line):
+    print "# skipping:", line
+    continue
+  if re.match('^\s*$', line):
+    print "# skipping:", line
+    continue
+  print "# processing:", line
   v = line.rsplit()
   k = str(float(v[0])) + ":" + str(float(v[1]))
   height1[k] = v[2]
