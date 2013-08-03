@@ -3,6 +3,8 @@ abes_cnc_utilities
 
 cnc tools, programs, scripts
 
+Unless otherwise specifically stated, everythign is under a GPLv3 license.
+
 
 pic2gcode
 ---------
