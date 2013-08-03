@@ -15,20 +15,18 @@ sub usage
   print " [-y y]\n";
   print " [-z z]\n";
   print " [-s s]\n";
-  print " [-r r]                rotate r degrees (counterclockwise)\n";
   print " [-h]                  help (this screen)\n";
 }
 
 open(my $fh_inp, "-");
 open(my $fh_out, ">-");
 my %opts;
-getopts("f:o:x:y:z:s:r:h", \%opts);
+getopts("f:o:x:y:z:s:h", \%opts);
 
 my $x_shift = 0.0;
 my $y_shift = 0.0;
 my $z_shift = 0.0;
 my $s_scale = 1.0;
-my $r_theta = 0.0;
 
 if (exists($opts{h})) { usage(); exit; }
 open($fh_inp, $opts{f}) if ($opts{f});
@@ -37,7 +35,6 @@ $x_shift = $opts{x} if ($opts{x});
 $y_shift = $opts{y} if ($opts{y});
 $z_shift = $opts{z} if ($opts{z});
 $s_scale = $opts{s} if ($opts{s});
-$r_theta = $opts{r} if ($opts{r});
 
 my @gcode;
 while (<$fh_inp>)

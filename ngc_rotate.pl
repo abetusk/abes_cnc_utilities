@@ -5,39 +5,37 @@
 
 use strict;
 use Getopt::Std;
+use Math::Trig;
 
 sub usage
 {
   print "usage:\n";
   print " [-f inp]              input gcode file (defaults to stdin)\n";
   print " [-o out]              output gcode file (defaults to stdout)\n";
-  print " [-x x]\n";
-  print " [-y y]\n";
-  print " [-z z]\n";
-  print " [-s s]\n";
-  print " [-r r]                rotate r degrees (counterclockwise)\n";
+  print " [-d deg]              rotation in degrees\n";
+  print " [-r rad]              rotation in radians\n";
   print " [-h]                  help (this screen)\n";
 }
 
 open(my $fh_inp, "-");
 open(my $fh_out, ">-");
 my %opts;
-getopts("f:o:x:y:z:s:r:h", \%opts);
+getopts("f:o:r:d:h", \%opts);
 
-my $x_shift = 0.0;
-my $y_shift = 0.0;
-my $z_shift = 0.0;
-my $s_scale = 1.0;
-my $r_theta = 0.0;
+my $rot_rad = 0.0;
+
 
 if (exists($opts{h})) { usage(); exit; }
 open($fh_inp, $opts{f}) if ($opts{f});
 open($fh_out, ">$opts{o}") if ($opts{o});
-$x_shift = $opts{x} if ($opts{x});
-$y_shift = $opts{y} if ($opts{y});
-$z_shift = $opts{z} if ($opts{z});
-$s_scale = $opts{s} if ($opts{s});
-$r_theta = $opts{r} if ($opts{r});
+$rot_rad = deg2rad($opts{d})  if ($opts{d});
+$rot_rad = $opts{r}           if ($opts{r});
+
+my %rot_mat;
+$rot_mat{"0,0"} =  cos($rot_rad);
+$rot_mat{"0,1"} = -sin($rot_rad);
+$rot_mat{"1,0"} =  sin($rot_rad);
+$rot_mat{"1,1"} =  cos($rot_rad);
 
 my @gcode;
 while (<$fh_inp>)
@@ -57,6 +55,15 @@ $state{prev_z} = undef;
 $state{g} = undef;
 $state{line_no} = 0;
 
+# transformed position
+$state{x_t} = undef;
+$state{prev_x_t} = undef;
+$state{y_t} = undef;
+$state{prev_y_t} = undef;
+$state{z_t} = undef;
+$state{prev_z_t} = undef;
+
+
 $state{del_x} = 1;
 $state{del_y} = 1;
 $state{del_z} = 1;
@@ -67,15 +74,22 @@ $state{x_dir} = 0;
 $state{y_dir} = 0;
 $state{z_dir} = 0;
 
+
+$state{line_flag} = "";
+
 my $op;
 my $operand;
 
-print "( x_shift $x_shift, y_shift $y_shift, z_shift $z_shift, s_scale $s_scale )\n";
+#print "( x_shift $x_shift, y_shift $y_shift, z_shift $z_shift, s_scale $s_scale )\n";
+print "( rot_rad $rot_rad, rot_mat[ [ ", $rot_mat{"0,0"}, ", ", $rot_mat{"0,1"}, " ], [ ", $rot_mat{"1,0"}, ", ", $rot_mat{"1,1"}, " ] ] )\n";
 
 foreach my $line (@gcode)
 {
   chomp($line);
   $state{line_no}++;
+  $state{line_flag} = "";
+  $state{i} = 0.0;
+  $state{j} = 0.0;
 
   if ( ($line =~ /^\s*;/) or
        ($line =~ /^\s*$/) )
@@ -83,6 +97,8 @@ foreach my $line (@gcode)
     print $line, "\n";
     next;
   }
+
+
 
   while ($line)
   {
@@ -105,6 +121,7 @@ foreach my $line (@gcode)
       state_g($operand) if ( is_op_g($op) ) ;
       state_m($operand) if ( is_op_m($op) ) ;
 
+
       state_x($operand) if ( is_op_x($op) ) ;
       state_y($operand) if ( is_op_y($op) ) ;
       state_z($operand) if ( is_op_z($op) ) ;
@@ -121,6 +138,9 @@ foreach my $line (@gcode)
     $line = '';
 
   }
+
+  print_command();
+
   print $fh_out "\n";
 
 }
@@ -129,6 +149,9 @@ close $fh_out if fileno $fh_out != fileno STDOUT;
 sub is_comment
 {
   my $l = shift;
+
+  $state{line_flag} .= ":comment";
+
   return $l =~ /^\s*\([^\)]*\)/;
 }
 
@@ -150,7 +173,7 @@ sub is_op
 sub chomp_op
 {
   my $l = shift;
-  
+
   $l =~ /^\s*([^\d-]+\s*)+/;
 
   my $op = substr $l, 0, @+[0];
@@ -186,13 +209,21 @@ sub state_g3 { my $l = shift; $state{g} = 3; }
 sub state_f
 {
   my $f = shift;
-  print "f$f";
+  $state{f} = $f;
+
+  $state{line_flag} .= ":f";
+
+  #print "f$f\n";
 }
 
 sub state_s
 {
   my $s = shift;
-  print "s$s";
+  $state{s} = $s;
+
+  $state{line_flag} .= ":s";
+
+  #print "s$s\n";
 }
 
 
@@ -201,34 +232,53 @@ sub state_g
   my $g = shift;
   $state{g} = $g;
 
-  print "g$g";
+  $state{line_flag} .= ":g";
+
+  #print "g$g\n";
 }
+
 
 sub state_m
 {
   my $m = shift;
-  print "m$m";
+  $state{m} = $m;
+
+  $state{line_flag} .= ":m";
+
+  #print "m$m\n";
 }
 
 sub state_i
 {
   my $i = shift;
-  print "i", sprintf("%4.8f", $s_scale*$i) ;
+  $state{i} = $i;
+
+  $state{line_flag} .= ":i";
+
+  #print "i", $s_scale*$i, "\n";
 }
 
 sub state_j
 {
   my $j = shift;
-  print "j", sprintf("%4.8f", $s_scale*$j) ;
+  $state{j} = $j;
+
+  $state{line_flag} .= ":j";
+
+  #print "j", $s_scale*$j, "\n";
 }
 
 sub state_p
 {
   my $p = shift;
-  print "p$p";
+  $state{p} = $p;
+
+  $state{line_flag} .= ":p";
+
+  #print "p$p\n";
 }
 
-sub state_x 
+sub state_x
 {
   my $x = shift;
 
@@ -238,7 +288,9 @@ sub state_x
   $state{prev_x} = $state{x};
   $state{x} = $x;
 
-  print " x", sprintf("%4.8f", $s_scale*($x + $x_shift)) ;
+  $state{line_flag} .= ":x";
+
+  #print " x", ($s_scale*($x + $x_shift));
 }
 
 sub state_y
@@ -251,7 +303,9 @@ sub state_y
   $state{prev_y} = $state{y};
   $state{y} = $y;
 
-  print " y", sprintf("%4.8f", $s_scale*($y + $y_shift)) ;
+  $state{line_flag} .= ":y";
+
+  #print " y", ($s_scale*($y + $y_shift)), "\n";
 }
 
 sub state_z
@@ -264,7 +318,81 @@ sub state_z
   $state{prev_z} = $state{z};
   $state{z} = $z;
 
-  print "z", sprintf("%4.8f", $s_scale*($z + $z_shift)) ;
+  $state{line_flag} .= ":z";
+
+  #print "z", ($s_scale*($z + $z_shift)), "\n";
 }
 
 
+sub print_command
+{
+
+  print "g", $state{g} if ($state{line_flag} =~ m/:[gG]/);
+
+  if ($state{line_flag} =~ m/:[xyzijpXYZIJP]/)
+  {
+
+    # we must print both x and y out, might as well print z (might rotate in future)
+    my ($x_r, $y_r, $z_r) = rot($state{x}, $state{y}, $state{z});
+
+    # but only print it out if it's changed
+    if ( ($state{line_flag} =~ /:[xX]/) or 
+         ( defined($state{x_t}) and 
+           $x_r != $state{x_t} ) )
+    {
+      print " x", sprintf("%4.8f", $x_r) 
+    }
+
+    if ( ($state{line_flag} =~ /:[yY]/) or 
+         ( defined($state{y_t}) and 
+           $y_r != $state{y_t} ) )
+    {
+      print " y", sprintf("%4.8f", $y_r) 
+    }
+
+    if ( ($state{line_flag} =~ /:[zZ]/) or 
+         ( defined($state{z_t}) and 
+           $z_r != $state{z_t} ) )
+    {
+      print " z", sprintf("%4.8f", $z_r) 
+    }
+
+    #print " y", sprintf("%4.8f", $y_r) if ( defined($state{y_t}) and $y_r != $state{y_t} );
+    #print " z", sprintf("%4.8f", $z_r) if ( $z_r == $state{z_t} );
+
+    $state{prev_x_t} = $state{x_t};
+    $state{x_t} = $x_r;
+    $state{prev_y_t} = $state{y_t};
+    $state{y_t} = $y_r;
+    $state{prev_z_t} = $state{z_t};
+    $state{z_t} = $z_r;
+
+
+    # rotate i and j by appropriate amount
+    if ($state{line_flag} =~ m/:[ijIJ]/)
+    {
+      my ($i_r, $j_r, $dummy) = rot($state{i}, $state{j}, 0.0);
+      print " i", sprintf("%4.8f", $i_r),  " j", sprintf("%4.8f", $j_r);
+    }
+
+    # p left unmolested
+    print " p", $state{p} if ($state{line_flag} =~ m/:[pP]/);
+  }
+
+  print " f", $state{f} if ($state{line_flag} =~ m/:[fF]/);
+  print " s", $state{f} if ($state{line_flag} =~ m/:[sS]/);
+  print " m", $state{f} if ($state{line_flag} =~ m/:[mM]/);
+
+}
+
+sub rot
+{
+  my $x = shift;
+  my $y = shift;
+  my $z = shift;
+
+  my $x_new = $x * $rot_mat{"0,0"} + $y * $rot_mat{"0,1"};
+  my $y_new = $x * $rot_mat{"1,0"} + $y * $rot_mat{"1,1"};
+
+  return ($x_new, $y_new, $z);
+}
