@@ -21,8 +21,8 @@ sub usage
   print " [-h]                  help (this screen)\n";
 }
 
-open(my $fh_inp, "-");
-open(my $fh_out, ">-");
+open(my $FH_INP, "-");
+open(my $FH_OUT, ">-");
 my %opts;
 getopts("f:o:x:y:z:s:X:Y:Z:h", \%opts);
 
@@ -36,8 +36,8 @@ my $y_scale = 1.0;
 my $z_scale = 1.0;
 
 if (exists($opts{h})) { usage(); exit; }
-open($fh_inp, $opts{f}) if ($opts{f});
-open($fh_out, ">$opts{o}") if ($opts{o});
+open($FH_INP, $opts{f}) if ($opts{f});
+open($FH_OUT, ">$opts{o}") if ($opts{o});
 $x_shift = $opts{x} if ($opts{x});
 $y_shift = $opts{y} if ($opts{y});
 $z_shift = $opts{z} if ($opts{z});
@@ -57,11 +57,11 @@ if ($opts{s})
 
 
 my @gcode;
-while (<$fh_inp>)
+while (<$FH_INP>)
 {
   push @gcode, $_;
 }
-close $fh_inp if fileno $fh_inp != fileno STDIN;
+close $FH_INP if fileno $FH_INP != fileno STDIN;
 
 my %state;
 
@@ -87,7 +87,7 @@ $state{z_dir} = 0;
 my $op;
 my $operand;
 
-print "( x_shift $x_shift, y_shift $y_shift, z_shift $z_shift, x_scale $x_scale, y_scale $y_scale )\n";
+print $FH_OUT "( x_shift $x_shift, y_shift $y_shift, z_shift $z_shift, x_scale $x_scale, y_scale $y_scale )\n";
 
 foreach my $line (@gcode)
 {
@@ -97,7 +97,7 @@ foreach my $line (@gcode)
   if ( ($line =~ /^\s*;/) or
        ($line =~ /^\s*$/) )
   {
-    print $line, "\n";
+    print $FH_OUT $line, "\n";
     next;
   }
 
@@ -108,7 +108,7 @@ foreach my $line (@gcode)
     if (is_comment($line))
     {
       ($op, $line) = chomp_comment($line);
-      print $op;
+      print $FH_OUT $op;
       next;
     }
 
@@ -135,14 +135,14 @@ foreach my $line (@gcode)
       next;
     }
 
-    print $fh_out $line, " ( unprocessed )\n";
+    print $FH_OUT $line, " ( unprocessed )\n";
     $line = '';
 
   }
-  print $fh_out "\n";
+  print $FH_OUT "\n";
 
 }
-close $fh_out if fileno $fh_out != fileno STDOUT;
+close $FH_OUT if fileno $FH_OUT != fileno STDOUT;
 
 sub is_comment
 {
@@ -205,13 +205,13 @@ sub state_g3 { my $l = shift; $state{g} = 3; }
 sub state_f
 {
   my $f = shift;
-  print "f$f";
+  print $FH_OUT "f$f";
 }
 
 sub state_s
 {
   my $s = shift;
-  print "s$s";
+  print $FH_OUT "s$s";
 }
 
 
@@ -220,31 +220,31 @@ sub state_g
   my $g = shift;
   $state{g} = $g;
 
-  print "g$g";
+  print $FH_OUT "g$g";
 }
 
 sub state_m
 {
   my $m = shift;
-  print "m$m";
+  print $FH_OUT "m$m";
 }
 
 sub state_i
 {
   my $i = shift;
-  print "i", sprintf("%4.8f", $x_scale*$i) ;
+  print $FH_OUT "i", sprintf("%4.8f", $x_scale*$i) ;
 }
 
 sub state_j
 {
   my $j = shift;
-  print "j", sprintf("%4.8f", $y_scale*$j) ;
+  print $FH_OUT "j", sprintf("%4.8f", $y_scale*$j) ;
 }
 
 sub state_p
 {
   my $p = shift;
-  print "p$p";
+  print $FH_OUT "p$p";
 }
 
 sub state_x
@@ -257,7 +257,7 @@ sub state_x
   $state{prev_x} = $state{x};
   $state{x} = $x;
 
-  print " x", sprintf("%4.8f", $x_scale*($x + $x_shift)) ;
+  print $FH_OUT " x", sprintf("%4.8f", $x_scale*($x + $x_shift)) ;
 }
 
 sub state_y
@@ -270,7 +270,7 @@ sub state_y
   $state{prev_y} = $state{y};
   $state{y} = $y;
 
-  print " y", sprintf("%4.8f", $y_scale*($y + $y_shift)) ;
+  print $FH_OUT " y", sprintf("%4.8f", $y_scale*($y + $y_shift)) ;
 }
 
 
@@ -284,5 +284,5 @@ sub state_z
   $state{prev_z} = $state{z};
   $state{z} = $z;
 
-  print "z", sprintf("%4.8f", $z_scale*($z + $z_shift)) ;
+  print $FH_OUT "z", sprintf("%4.8f", $z_scale*($z + $z_shift)) ;
 }
