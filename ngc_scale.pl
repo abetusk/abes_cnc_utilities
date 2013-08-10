@@ -6,20 +6,35 @@
 use strict;
 use Getopt::Std;
 
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my $VERSION_STR = "0.1 alpha";
+
+sub VERSION_MESSAGE {
+  print "ngc_scale version ", $VERSION_STR, "\n"
+}
+
 sub usage
 {
   print "usage:\n";
   print " [-f inp]              input gcode file (defaults to stdin)\n";
   print " [-o out]              output gcode file (defaults to stdout)\n";
-  print " [-x x]\n";
-  print " [-y y]\n";
-  print " [-z z]\n";
-  print " [-s s]\n";
+  print " [-x x]                x translation amount\n";
+  print " [-y y]                y translation amount\n";
+  print " [-z z]                z translation amount\n";
+  print " [-s s]                x,y,z scaling factor (overrides -X, -Y, -Z)\n";
   print " [-X x_scale]          scale in the x direction\n";
   print " [-Y y_scale]          scale in the y direction\n";
   print " [-Z z_scale]          scale in the z direction\n";
-  print " [-h]                  help (this screen)\n";
+  print " [-h|--help]           help (this screen)\n";
+  print " [--version]           print version number\n";
 }
+
+sub HELP_MESSAGE {
+  usage();
+}
+
+usage() and exit(0) if (scalar(@ARGV) == 0);
 
 open(my $FH_INP, "-");
 open(my $FH_OUT, ">-");
@@ -41,7 +56,6 @@ open($FH_OUT, ">$opts{o}") if ($opts{o});
 $x_shift = $opts{x} if ($opts{x});
 $y_shift = $opts{y} if ($opts{y});
 $z_shift = $opts{z} if ($opts{z});
-#$s_scale = $opts{s} if ($opts{s});
 
 $x_scale = $opts{X} if ($opts{X});
 $y_scale = $opts{Y} if ($opts{Y});

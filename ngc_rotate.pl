@@ -7,15 +7,32 @@ use strict;
 use Getopt::Std;
 use Math::Trig;
 
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my $VERSION_STR = "0.1 alpha";
+
+sub VERSION_MESSAGE {
+  print "ngc_rotate version ", $VERSION_STR, "\n"
+}
+
 sub usage
 {
   print "usage:\n";
   print " [-f inp]              input gcode file (defaults to stdin)\n";
   print " [-o out]              output gcode file (defaults to stdout)\n";
   print " [-d deg]              rotation in degrees\n";
-  print " [-r rad]              rotation in radians\n";
-  print " [-h]                  help (this screen)\n";
+  print " [-r rad]              rotation in radians (overrides -d)\n";
+  print " [-h|--help]           help (this screen)\n";
+  print " [--version]           print version number\n";
 }
+
+sub HELP_MESSAGE {
+  usage();
+}
+
+usage() and exit(0) if (scalar(@ARGV) == 0);
+
 
 open(my $FH_INP, "-");
 open(my $FH_OUT, ">-");

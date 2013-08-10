@@ -6,17 +6,33 @@
 use strict;
 use Getopt::Std;
 
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my $VERSION_STR = "0.1 alpha";
+
+sub VERSION_MESSAGE {
+  print "ngc_translate version ", $VERSION_STR, "\n"
+}
+
 sub usage
 {
   print "usage:\n";
   print " [-f inp]              input gcode file (defaults to stdin)\n";
   print " [-o out]              output gcode file (defaults to stdout)\n";
-  print " [-x x]\n";
-  print " [-y y]\n";
-  print " [-z z]\n";
-  print " [-s s]\n";
-  print " [-h]                  help (this screen)\n";
+  print " [-x x]                x translation amount\n";
+  print " [-y y]                y translation amount\n";
+  print " [-z z]                z translation amount\n";
+  print " [-s s]                x,y,z scaling factor\n";
+  print " [-h|--help]           help (this screen)\n";
+  print " [--version]           print version string\n";
+  return 1;
 }
+
+sub HELP_MESSAGE {
+  usage();
+}
+
+usage() and exit(0) if (scalar(@ARGV) == 0);
 
 open(my $FH_INP, "-");
 open(my $FH_OUT, ">-");
