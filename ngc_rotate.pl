@@ -17,17 +17,18 @@ sub usage
   print " [-h]                  help (this screen)\n";
 }
 
-open(my $fh_inp, "-");
-open(my $fh_out, ">-");
+open(my $FH_INP, "-");
+open(my $FH_OUT, ">-");
 my %opts;
 getopts("f:o:r:d:h", \%opts);
 
 my $rot_rad = 0.0;
 
+my $COMMENT_JUST_PRINTED = 0;
 
 if (exists($opts{h})) { usage(); exit; }
-open($fh_inp, $opts{f}) if ($opts{f});
-open($fh_out, ">$opts{o}") if ($opts{o});
+open($FH_INP, $opts{f}) if ($opts{f});
+open($FH_OUT, ">$opts{o}") if ($opts{o});
 $rot_rad = deg2rad($opts{d})  if ($opts{d});
 $rot_rad = $opts{r}           if ($opts{r});
 
@@ -38,11 +39,11 @@ $rot_mat{"1,0"} =  sin($rot_rad);
 $rot_mat{"1,1"} =  cos($rot_rad);
 
 my @gcode;
-while (<$fh_inp>)
+while (<$FH_INP>)
 {
   push @gcode, $_;
 }
-close $fh_inp if fileno $fh_inp != fileno STDIN;
+close $FH_INP if fileno $FH_INP != fileno STDIN;
 
 my %state;
 
@@ -80,8 +81,7 @@ $state{line_flag} = "";
 my $op;
 my $operand;
 
-#print "( x_shift $x_shift, y_shift $y_shift, z_shift $z_shift, s_scale $s_scale )\n";
-print "( rot_rad $rot_rad, rot_mat[ [ ", $rot_mat{"0,0"}, ", ", $rot_mat{"0,1"}, " ], [ ", $rot_mat{"1,0"}, ", ", $rot_mat{"1,1"}, " ] ] )\n";
+print $FH_OUT "( rot_rad $rot_rad, rot_mat[ [ ", $rot_mat{"0,0"}, ", ", $rot_mat{"0,1"}, " ], [ ", $rot_mat{"1,0"}, ", ", $rot_mat{"1,1"}, " ] ] )\n";
 
 foreach my $line (@gcode)
 {
@@ -94,22 +94,34 @@ foreach my $line (@gcode)
   if ( ($line =~ /^\s*;/) or
        ($line =~ /^\s*$/) )
   {
-    print $line, "\n";
+    print $FH_OUT $line, "\n";
     next;
   }
 
-
+  $COMMENT_JUST_PRINTED = 0;
+  my $tokens_processed = 0;
 
   while ($line)
   {
+    $tokens_processed++;
 
     # print comment
     if (is_comment($line))
     {
       ($op, $line) = chomp_comment($line);
-      print $op;
+
+      # unfortunately we have to mangle the comment formatting
+      # because we process commands at different points.
+      # To be safe, put comments on their own isolated lines.
+      # It gets a little ugly, but that's the price you pay for
+      # simplicity and consistency
+      print $FH_OUT "\n", $op, "\n";
+
+      $COMMENT_JUST_PRINTED = 1;
       next;
     }
+
+    $COMMENT_JUST_PRINTED = 0;
 
     if (is_op($line))
     {
@@ -134,17 +146,17 @@ foreach my $line (@gcode)
       next;
     }
 
-    print $fh_out $line, " ( unprocessed )\n";
+    print $FH_OUT $line, " ( unprocessed )\n";
     $line = '';
 
   }
 
   print_command();
 
-  print $fh_out "\n";
+  print $FH_OUT "\n" ;
 
 }
-close $fh_out if fileno $fh_out != fileno STDOUT;
+close $FH_OUT if fileno $FH_OUT != fileno STDOUT;
 
 sub is_comment
 {
@@ -212,8 +224,6 @@ sub state_f
   $state{f} = $f;
 
   $state{line_flag} .= ":f";
-
-  #print "f$f\n";
 }
 
 sub state_s
@@ -222,8 +232,6 @@ sub state_s
   $state{s} = $s;
 
   $state{line_flag} .= ":s";
-
-  #print "s$s\n";
 }
 
 
@@ -233,8 +241,6 @@ sub state_g
   $state{g} = $g;
 
   $state{line_flag} .= ":g";
-
-  #print "g$g\n";
 }
 
 
@@ -244,8 +250,6 @@ sub state_m
   $state{m} = $m;
 
   $state{line_flag} .= ":m";
-
-  #print "m$m\n";
 }
 
 sub state_i
@@ -254,8 +258,6 @@ sub state_i
   $state{i} = $i;
 
   $state{line_flag} .= ":i";
-
-  #print "i", $s_scale*$i, "\n";
 }
 
 sub state_j
@@ -264,8 +266,6 @@ sub state_j
   $state{j} = $j;
 
   $state{line_flag} .= ":j";
-
-  #print "j", $s_scale*$j, "\n";
 }
 
 sub state_p
@@ -274,8 +274,6 @@ sub state_p
   $state{p} = $p;
 
   $state{line_flag} .= ":p";
-
-  #print "p$p\n";
 }
 
 sub state_x
@@ -289,8 +287,6 @@ sub state_x
   $state{x} = $x;
 
   $state{line_flag} .= ":x";
-
-  #print " x", ($s_scale*($x + $x_shift));
 }
 
 sub state_y
@@ -304,8 +300,6 @@ sub state_y
   $state{y} = $y;
 
   $state{line_flag} .= ":y";
-
-  #print " y", ($s_scale*($y + $y_shift)), "\n";
 }
 
 sub state_z
@@ -319,15 +313,13 @@ sub state_z
   $state{z} = $z;
 
   $state{line_flag} .= ":z";
-
-  #print "z", ($s_scale*($z + $z_shift)), "\n";
 }
 
 
 sub print_command
 {
 
-  print "g", $state{g} if ($state{line_flag} =~ m/:[gG]/);
+  print $FH_OUT "g", $state{g} if ($state{line_flag} =~ m/:[gG]/);
 
   if ($state{line_flag} =~ m/:[xyzijpXYZIJP]/)
   {
@@ -340,25 +332,22 @@ sub print_command
          ( defined($state{x_t}) and 
            $x_r != $state{x_t} ) )
     {
-      print " x", sprintf("%4.8f", $x_r) 
+      print $FH_OUT " x", sprintf("%4.8f", $x_r) 
     }
 
     if ( ($state{line_flag} =~ /:[yY]/) or 
          ( defined($state{y_t}) and 
            $y_r != $state{y_t} ) )
     {
-      print " y", sprintf("%4.8f", $y_r) 
+      print $FH_OUT " y", sprintf("%4.8f", $y_r) 
     }
 
     if ( ($state{line_flag} =~ /:[zZ]/) or 
          ( defined($state{z_t}) and 
            $z_r != $state{z_t} ) )
     {
-      print " z", sprintf("%4.8f", $z_r) 
+      print $FH_OUT " z", sprintf("%4.8f", $z_r) 
     }
-
-    #print " y", sprintf("%4.8f", $y_r) if ( defined($state{y_t}) and $y_r != $state{y_t} );
-    #print " z", sprintf("%4.8f", $z_r) if ( $z_r == $state{z_t} );
 
     $state{prev_x_t} = $state{x_t};
     $state{x_t} = $x_r;
@@ -372,16 +361,16 @@ sub print_command
     if ($state{line_flag} =~ m/:[ijIJ]/)
     {
       my ($i_r, $j_r, $dummy) = rot($state{i}, $state{j}, 0.0);
-      print " i", sprintf("%4.8f", $i_r),  " j", sprintf("%4.8f", $j_r);
+      print $FH_OUT " i", sprintf("%4.8f", $i_r),  " j", sprintf("%4.8f", $j_r);
     }
 
     # p left unmolested
-    print " p", $state{p} if ($state{line_flag} =~ m/:[pP]/);
+    print $FH_OUT " p", $state{p} if ($state{line_flag} =~ m/:[pP]/);
   }
 
-  print " f", $state{f} if ($state{line_flag} =~ m/:[fF]/);
-  print " s", $state{f} if ($state{line_flag} =~ m/:[sS]/);
-  print " m", $state{f} if ($state{line_flag} =~ m/:[mM]/);
+  print $FH_OUT " f", $state{f} if ($state{line_flag} =~ m/:[fF]/);
+  print $FH_OUT " s", $state{s} if ($state{line_flag} =~ m/:[sS]/);
+  print $FH_OUT " m", $state{m} if ($state{line_flag} =~ m/:[mM]/);
 
 }
 
