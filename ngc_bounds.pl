@@ -40,7 +40,7 @@ while (<FIL>)
     $g_line = substr $g_line, (@+[0]);
   }
 
-  while ($g_line =~ /[xX]\s*(-?\d+(\.\d+)?)/)
+  while ($g_line =~ /[xX]\s*(-?\d+(\.\d+)?|-?\.\d+)/)
   {
     my $x = $1;
     my $x_mm = ( $is_mm ? $x : ($x * 25.4) );
@@ -59,7 +59,7 @@ while (<FIL>)
   }
 
   $g_line = $l;
-  while ($g_line =~ /[yY]\s*(-?\d+(\.\d+)?)/)
+  while ($g_line =~ /[yY]\s*(-?\d+(\.\d+)?|-?\.\d+)/)
   {
     my $y = $1;
     my $y_mm = ( $is_mm ? $y : ($y * 25.4) );
@@ -78,7 +78,7 @@ while (<FIL>)
   }
 
   my $g_line = $l;
-  while ($g_line =~ /[zZ]\s*(-?\d+(\.\d+)?)/)
+  while ($g_line =~ /[zZ]\s*(-?\d+(\.\d+)?|-?\.\d+)/)
   {
     my $z = $1;
     my $z_mm = ( $is_mm ? $z : ($z * 25.4) );
