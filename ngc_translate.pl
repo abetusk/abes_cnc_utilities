@@ -100,6 +100,13 @@ foreach my $line (@gcode)
   while ($line)
   {
 
+    if ($line =~ /^\s*$/)
+    {
+      $line = "";
+      next;
+    }
+
+
     # print comment
     if (is_comment($line))
     {

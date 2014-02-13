@@ -19,13 +19,10 @@ sub usage
   print "usage:\n";
   print " [-f inp]              input gcode file (defaults to stdin)\n";
   print " [-o out]              output gcode file (defaults to stdout)\n";
-  print " [-x x]                x translation amount\n";
-  print " [-y y]                y translation amount\n";
-  print " [-z z]                z translation amount\n";
   print " [-s s]                x,y,z scaling factor (overrides -X, -Y, -Z)\n";
-  print " [-X x_scale]          scale in the x direction\n";
-  print " [-Y y_scale]          scale in the y direction\n";
-  print " [-Z z_scale]          scale in the z direction\n";
+  print " [-x x_scale]          scale in the x direction\n";
+  print " [-y y_scale]          scale in the y direction\n";
+  print " [-z z_scale]          scale in the z direction\n";
   print " [-h|--help]           help (this screen)\n";
   print " [--version]           print version number\n";
 }
@@ -39,11 +36,8 @@ usage() and exit(0) if (scalar(@ARGV) == 0);
 open(my $FH_INP, "-");
 open(my $FH_OUT, ">-");
 my %opts;
-getopts("f:o:x:y:z:s:X:Y:Z:h", \%opts);
+getopts("f:o:x:y:z:s:h", \%opts);
 
-my $x_shift = 0.0;
-my $y_shift = 0.0;
-my $z_shift = 0.0;
 my $s_scale = 1.0;
 
 my $x_scale = 1.0;
@@ -53,17 +47,15 @@ my $z_scale = 1.0;
 if (exists($opts{h})) { usage(); exit; }
 open($FH_INP, $opts{f}) if ($opts{f});
 open($FH_OUT, ">$opts{o}") if ($opts{o});
-$x_shift = $opts{x} if ($opts{x});
-$y_shift = $opts{y} if ($opts{y});
-$z_shift = $opts{z} if ($opts{z});
 
-$x_scale = $opts{X} if ($opts{X});
-$y_scale = $opts{Y} if ($opts{Y});
-$z_scale = $opts{Z} if ($opts{Z});
+$x_scale = $opts{x} if ($opts{x});
+$y_scale = $opts{y} if ($opts{y});
+$z_scale = $opts{z} if ($opts{z});
 
 # s_scale overrides x and y scale
 if ($opts{s})
 {
+  $s_scale = $opts{s};
   $x_scale = $s_scale;
   $y_scale = $s_scale;
   $z_scale = $s_scale;
@@ -101,7 +93,7 @@ $state{z_dir} = 0;
 my $op;
 my $operand;
 
-print $FH_OUT "( x_shift $x_shift, y_shift $y_shift, z_shift $z_shift, x_scale $x_scale, y_scale $y_scale )\n";
+print $FH_OUT "( x_scale $x_scale, y_scale $y_scale )\n";
 
 foreach my $line (@gcode)
 {
@@ -115,8 +107,15 @@ foreach my $line (@gcode)
     next;
   }
 
+
   while ($line)
   {
+
+    if ($line =~ /^\s*$/)
+    {
+      $line = "";
+      next;
+    }
 
     # print comment
     if (is_comment($line))
@@ -129,6 +128,7 @@ foreach my $line (@gcode)
 
     if (is_op($line))
     {
+
       ($op, $operand, $line) = chomp_op($line);
 
       state_f($operand) if ( is_op_f($op) ) ;
@@ -271,7 +271,7 @@ sub state_x
   $state{prev_x} = $state{x};
   $state{x} = $x;
 
-  print $FH_OUT " x", sprintf("%4.8f", $x_scale*($x + $x_shift)) ;
+  print $FH_OUT " x", sprintf("%4.8f", $x_scale*($x)) ;
 }
 
 sub state_y
@@ -284,7 +284,7 @@ sub state_y
   $state{prev_y} = $state{y};
   $state{y} = $y;
 
-  print $FH_OUT " y", sprintf("%4.8f", $y_scale*($y + $y_shift)) ;
+  print $FH_OUT " y", sprintf("%4.8f", $y_scale*($y)) ;
 }
 
 
@@ -298,5 +298,5 @@ sub state_z
   $state{prev_z} = $state{z};
   $state{z} = $z;
 
-  print $FH_OUT "z", sprintf("%4.8f", $z_scale*($z + $z_shift)) ;
+  print $FH_OUT "z", sprintf("%4.8f", $z_scale*($z)) ;
 }

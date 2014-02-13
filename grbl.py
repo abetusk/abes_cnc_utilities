@@ -20,6 +20,7 @@ import time
 
 # default values 
 device = "/dev/ttyUSB0"
+#device = "/dev/ttyACM0"
 baud = 9600
 grbl_serial = None
 sleepy = 0.05            # seconds
@@ -53,10 +54,18 @@ def send_command( cmd ) :
 
   ans = grbl_out
   if verbose:
-    print "#  got :", grbl_out.strip()
+    print "#  got :", grbl_out.strip(), ":"
 
   if ( re.search("^error:", grbl_out) ):
     return ans
+
+  if ( re.search("^Grbl", grbl_out) or re.search("^\s*$", grbl_out) ):
+    grbl_out = grbl_serial.readline()
+
+    ans = grbl_out
+    if verbose:
+      print "#  got :", grbl_out.strip()
+
 
   while ( not re.search("ok", grbl_out) ):
     grbl_out = grbl_serial.readline()
@@ -155,7 +164,12 @@ if __name__ == "__main__":
 
   setup(device, baud)
 
+  print "setup done..."
+
   for cmd in args.command:
+    print "sending command", cmd
     print send_command(cmd)
+
+  print "tearing down..."
 
   teardown()

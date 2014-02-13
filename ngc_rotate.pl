@@ -120,6 +120,13 @@ foreach my $line (@gcode)
 
   while ($line)
   {
+
+    if ($line =~ /^\s*$/)
+    {
+      $line = "";
+      next;
+    }
+
     $tokens_processed++;
 
     # print comment
