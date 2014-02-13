@@ -4,6 +4,7 @@
 
 #!/usr/bin/python
 
+import sys
 import os
 import numpy
 import random
@@ -26,10 +27,10 @@ class sidi:
 
     print "## len(point):", len(self.point), "(", len(self.x), len(self.y), len(self.z), ")"
     for k in range(len(self.point)):
-      print "##", self.point[k]
+      #print "##", self.point[k]
       print "#", self.x[k], self.y[k], self.z[k]
 
-  def f(self, pnt, c=1.0, e=1.0, eps=0.00001):
+  def f(self, pnt, e=2.0, eps=0.00001):
 
     dist = []
 
@@ -43,32 +44,31 @@ class sidi:
       if d <= eps:
         return x,y
 
-      R += c / d**e
-      dist.append( d )
+      d_me = 1.0 / d**e
 
-      print "D:", x, y, d
+      #R += 1.0 / d**e
+      #dist.append( d )
+      R += d_me
+      dist.append( d_me )
 
     interpolated_z = 0.0
-    for k, d in enumerate(dist):
-      v = c / d**e
-
-      print "k,d", k, d, v
-
-      interpolated_z += R * self.z[k] / v
+    for k, d_me in enumerate(dist):
+      #v = 1.0 / d**e
+      interpolated_z += d_me * self.z[k] / R
 
     return interpolated_z
 
-  def interpolate(self, x, y, c=1.0, e=1.0, eps=0.00001 ):
+  def interpolate(self, x, y, e=2.0, eps=0.00001 ):
 
     if type(x) != list:
-      return self.f( [x, y], c, e, eps )
+      return self.f( [x, y], e, eps )
 
     z_rop = []
     for k in range(len(x)):
       u = x[k]
       v = y[k]
 
-      z_rop.append( self.f( [u,v], c, e, eps ) )
+      z_rop.append( self.f( [u,v], e, eps ) )
 
     return z_rop
 
@@ -91,17 +91,27 @@ for i in range(n):
     pnts.append( [ x, y, z ] )
 
 
+p = 0
+for i in range(n):
+  for j in range(m):
+    print "#_ ", pnts[p][0], pnts[p][1], pnts[p][2]
+    p+=1
+  print "#_ "
+
+
 si = sidi( pnts )
 
-si.debug()
+#si.debug()
+#sys.exit(0)
 
-
-n_sample = 100
-m_sample = 100
+n_sample = 40
+m_sample = 40
 for i in range(n_sample):
   for j in range(m_sample):
     x = sx + w*float(i)/float(n_sample)
     y = sy + h*float(j)/float(m_sample)
     print x, y, si.interpolate(x, y)
+
+  print
 
 
