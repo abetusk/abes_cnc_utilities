@@ -1,0 +1,132 @@
+* opto limit switches, needs 5V.  Smoothie (and clones) have pullup on 1.26 lines so no extra
+  pullup is needed
+* The MKS SBASE board came as 3v3.  Change the pin to give it 5v
+* install a limit switch on the door
+* breakout board for the ribbon cable
+
+Power supply wiring
+---
+
+The power supply has a four bin header (with xh spacing?), a 3 pin header (.1")
+and two 2-pin headers (.1") along with a four pin connector for mains power
+and the cable running to the laser tube.  The mains power connects to I think
+the ground of the laser and powers the fan.
+
+The four pin output header is what powers the steppers (if need be) and the main
+control board.
+
+The three pin header is used for the variable power connected to the pot.  The
+PWM output from the smoothie will connect to this pin.
+
+One 2-pin connector is for the 'laser ready' and the other is for the 'laser test'.
+
+One two pin connector (laser ready, pushbutton hold) and the other switch to the
+door are connected and can stay connected.  One is labelled (K+,K-) and the other
+is (D+,D-). TODO: figure out which is which.
+
+The PWM output needs to be connected to the 3-pin connector (G-In-V).  
+
+
+Changes to config.txt
+---
+
+Important!  The current was initially set to 2.0 (A) which caused the motors
+to get scorching hot and I think started melting the plastic.  Setting it
+to 0.5A was still running hot.  I settled on 0.25.  It feels firm and is only
+warm to the touch.
+
+```
+# Stepper module pins ( ports, and pin numbers, appending "!" to the number will invert a pin )
+alpha_step_pin                               2.0              # Pin for alpha stepper step signal
+alpha_dir_pin                                0.5              # Pin for alpha stepper direction
+alpha_en_pin                                 0.4              # Pin for alpha enable pin
+alpha_current                                0.25              # X stepper motor current / checked!!!
+alpha_max_rate                               30000.0          # mm/min
+
+beta_step_pin                                2.1              # Pin for beta stepper step signal
+beta_dir_pin                                 0.11             # Pin for beta stepper direction
+beta_en_pin                                  0.10             # Pin for beta enable
+beta_current                                 0.25              # Y stepper motor current
+beta_max_rate                                30000.0          # mm/min
+
+gamma_step_pin                               2.2              # Pin for gamma stepper step signal
+gamma_dir_pin                                0.20             # Pin for gamma stepper direction
+gamma_en_pin                                 0.19             # Pin for gamma enable
+gamma_current                                0.25              # Z stepper motor current
+gamma_max_rate                               300.0            # mm/min
+```
+
+Enable the laser module (pwm) on pin 3.26:
+
+```
+laser_module_enable                          true            # Whether to activate the laser module at all. All configuration is
+                                                              # ignored if false.
+laser_module_pin                             3.26             # this pin will be PWMed to control the laser. Only P2.0 - P2.5, P1.18, P1.20, P1.21, P1.23, P1.24, P1.26, P3.25, P3.26
+```
+
+Enable X and Y endstops:
+
+```
+endstops_enable                              true             # the endstop module is enabled by default and can be disabled here
+#corexy_homing                               false            # set to true if homing on a hbit or corexy
+alpha_min_endstop                            1.24^            # add a ! to invert if endstop is NO connected to ground
+alpha_max_endstop                            nc               # NOTE set to nc ... 1.25^
+alpha_homing_direction                       home_to_min      # or set to home_to_max and set alpha_max
+alpha_min                                    0                # this gets loaded after homing when home_to_min is set
+alpha_max                                    200              # this gets loaded after homing when home_to_max is set
+beta_min_endstop                             1.26^            #
+beta_max_endstop                             nc               # 1.27^
+beta_homing_direction                        home_to_min      #
+beta_min                                     0                #
+beta_max                                     200              #
+gamma_min_endstop                            nc               # 1.28^
+gamma_max_endstop                            nc               # 1.29^
+gamma_homing_direction                       home_to_min      #
+gamma_min                                    0                #
+gamma_max                                    200              #
+```
+
+And make sure things don't keep going when the limit switches get hit for the min X and Y:
+
+```
+alpha_limit_enable                          true             # set to true to enable X min and max limit switches
+beta_limit_enable                           true             # set to true to enable Y min and max limit switches
+#gamma_limit_enable                          false            # set to true to enable Z min and max limit switches
+```
+
+Mirror Alignment
+---
+
+https://www.youtube.com/watch?v=FDTxCIf6Zt0
+https://www.youtube.com/watch?v=XRizHrFSCwc
+https://www.youtube.com/watch?v=azlH7bBkHvQ
+
+cleaning lens:
+* https://www.youtube.com/watch?v=MRVwUb-mAck
+
+http://www.floatingwombat.me.uk/wordpress/wp-content/uploads/2015/02/K40-Alignment-Instructions.pdf
+http://dck40.blogspot.com/2013/02/post-by-nycon-how-to-adjust-mirrors-for.html
+
+
+2016-03-07
+---
+
+Somehow the back mirror got misaligned.  I tweaked it until it worked.  The mirror is one of the cheap kind that has screws
+in the positions (presumably one for X, one for Y and one for both) along with some 'holding nuts' that need to be loosened
+before alignment can take place.
+
+2016-03-17
+---
+
+Things are working.  I've cut 1/8" wood (plywood?) at full power, feedrate '500'.  There are still a few issues:
+
+* There should be better venting.  Flames periodicially come up
+* The cuts are not straight.  This is most likely due to the beam not hitting the mirror square and going through
+  the lens at an angle.  See ["Why Are My Laser Cut Edges Not Straight?"](http://www.buildlog.net/blog/2013/05/why-are-my-laser-cut-edges-not-straight/)
+* Lower priority, but having a quick 'dry run' to get the bounds of the work would be good.
+
+From the software side:
+
+* Order is important.  In making medallions if you cut the outside before the inside this is obviously bad.
+
+
