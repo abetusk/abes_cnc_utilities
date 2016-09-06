@@ -129,4 +129,9 @@ From the software side:
 
 * Order is important.  In making medallions if you cut the outside before the inside this is obviously bad.
 
+2016-09-06
+---
+
+3.25 is the PWM pin for variable laser output.
+
 
