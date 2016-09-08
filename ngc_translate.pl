@@ -9,6 +9,8 @@ use Getopt::Std;
 $Getopt::Std::STANDARD_HELP_VERSION = 1;
 
 my $VERSION_STR = "0.1 alpha";
+my $UC = 0;
+my $SPACE = "";
 
 sub VERSION_MESSAGE {
   print "ngc_translate version ", $VERSION_STR, "\n"
@@ -23,6 +25,8 @@ sub usage
   print " [-y y]                y translation amount\n";
   print " [-z z]                z translation amount\n";
   print " [-s s]                x,y,z scaling factor\n";
+  print " [-U]                  use upper case gcode (lower case default)\n";
+  print " [-S]                  space betwen x/y gcode\n";
   print " [-h|--help]           help (this screen)\n";
   print " [--version]           print version string\n";
   return 1;
@@ -37,7 +41,7 @@ usage() and exit(0) if (scalar(@ARGV) == 0);
 open(my $FH_INP, "-");
 open(my $FH_OUT, ">-");
 my %opts;
-getopts("f:o:x:y:z:s:h", \%opts);
+getopts("f:o:x:y:z:s:hUS", \%opts);
 
 my $x_shift = 0.0;
 my $y_shift = 0.0;
@@ -51,6 +55,8 @@ $x_shift = $opts{x} if ($opts{x});
 $y_shift = $opts{y} if ($opts{y});
 $z_shift = $opts{z} if ($opts{z});
 $s_scale = $opts{s} if ($opts{s});
+$UC = 1 if ($opts{U});
+$SPACE = " " if ($opts{S});
 
 my @gcode;
 while (<$FH_INP>)
@@ -181,6 +187,13 @@ sub chomp_op
 
   $l =~ s/^\s*(-?\s*\d+\s*(\.\s*\d+)?)//;
 
+  $op =~ s/^\s+//;
+  $op =~ s/\s+$//;
+  $operand =~ s/^\s+//;
+  $operand =~ s/\s+$//;
+  $l =~ s/^\s+//;
+  $l =~ s/\s+$//;
+
   return ($op, $operand, $l);
 }
 
@@ -206,13 +219,21 @@ sub state_g3 { my $l = shift; $state{g} = 3; }
 sub state_f
 {
   my $f = shift;
-  print $FH_OUT "f$f";
+  if ($UC) {
+    print $FH_OUT "F$f";
+  } else {
+    print $FH_OUT "f$f";
+  }
 }
 
 sub state_s
 {
   my $s = shift;
-  print $FH_OUT "s$s";
+  if ($UC) {
+    print $FH_OUT "S$s";
+  } else {
+    print $FH_OUT "s$s";
+  }
 }
 
 
@@ -221,31 +242,51 @@ sub state_g
   my $g = shift;
   $state{g} = $g;
 
-  print $FH_OUT "g$g";
+  if ($UC) {
+    print $FH_OUT "G$g";
+  } else {
+    print $FH_OUT "g$g";
+  }
 }
 
 sub state_m
 {
   my $m = shift;
-  print $FH_OUT "m$m";
+  if ($UC) {
+    print $FH_OUT "M$m";
+  } else {
+    print $FH_OUT "m$m";
+  }
 }
 
 sub state_i
 {
   my $i = shift;
-  print $FH_OUT "i", sprintf("%4.8f", $s_scale*$i) ;
+  if ($UC) {
+    print $FH_OUT "I", sprintf("%4.8f", $s_scale*$i) ;
+  } else {
+    print $FH_OUT "i", sprintf("%4.8f", $s_scale*$i) ;
+  }
 }
 
 sub state_j
 {
   my $j = shift;
-  print $FH_OUT "j", sprintf("%4.8f", $s_scale*$j) ;
+  if ($UC) {
+    print $FH_OUT "J", sprintf("%4.8f", $s_scale*$j) ;
+  } else {
+    print $FH_OUT "j", sprintf("%4.8f", $s_scale*$j) ;
+  }
 }
 
 sub state_p
 {
   my $p = shift;
-  print $FH_OUT "p$p";
+  if ($UC) {
+    print $FH_OUT "P$p";
+  } else {
+    print $FH_OUT "p$p";
+  }
 }
 
 sub state_x 
@@ -258,7 +299,11 @@ sub state_x
   $state{prev_x} = $state{x};
   $state{x} = $x;
 
-  print $FH_OUT " x", sprintf("%4.8f", $s_scale*($x + $x_shift)) ;
+  if ($UC) {
+    print $FH_OUT "${SPACE}X", sprintf("%4.8f", $s_scale*($x + $x_shift)) ;
+  } else {
+    print $FH_OUT "${SPACE}x", sprintf("%4.8f", $s_scale*($x + $x_shift)) ;
+  }
 }
 
 sub state_y
@@ -271,7 +316,11 @@ sub state_y
   $state{prev_y} = $state{y};
   $state{y} = $y;
 
-  print $FH_OUT " y", sprintf("%4.8f", $s_scale*($y + $y_shift)) ;
+  if ($UC) {
+    print $FH_OUT "${SPACE}Y", sprintf("%4.8f", $s_scale*($y + $y_shift)) ;
+  } else {
+    print $FH_OUT "${SPACE}y", sprintf("%4.8f", $s_scale*($y + $y_shift)) ;
+  }
 }
 
 sub state_z
@@ -284,7 +333,9 @@ sub state_z
   $state{prev_z} = $state{z};
   $state{z} = $z;
 
-  print $FH_OUT "z", sprintf("%4.8f", $s_scale*($z + $z_shift)) ;
+  if ($UC) {
+    print $FH_OUT "${SPACE}Z", sprintf("%4.8f", $s_scale*($z + $z_shift)) ;
+  } else {
+    print $FH_OUT "${SPACE}z", sprintf("%4.8f", $s_scale*($z + $z_shift)) ;
+  }
 }
-
-
