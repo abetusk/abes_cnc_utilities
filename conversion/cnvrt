@@ -1,0 +1,44 @@
+#!/bin/bash
+
+inpsvg="$1"
+sf=`echo '72/25.4' | bc -l`
+premul=`echo 1000000 | bc -l`
+invmul=`echo "1/$premul" | bc -l`
+
+frapid=""
+#fslow="F800"
+fslow=""
+S="1.0"
+
+shiftx=20
+shifty=20
+
+if [[ "$inpsvg" == "" ]] ; then
+  echo "provide input svg"
+  exit 1
+fi
+
+rawtype=`file $inpsvg`
+checktype=`file -b $inpsvg | cut -f1 -d' '`
+if [[ "$checktype" != "SVG" ]] ; then
+  echo -e "file $inpsvg is of type:\n\n$rawtype\n\nNnot an SVG file? Exiting.\n"
+  exit 1
+fi
+
+bn=`basename $inpsvg .svg`
+
+echo "creating $bn.ps"
+rsvg-convert -f ps -o $bn.ps $inpsvg
+
+#pstoedit -f gcode $bn.ps $bn.rs274
+#cat $bn.rs274 | ./ngc-simplify.py | ngc_scale -s $sf > ${bn}.ngc
+
+pstoedit -f gnuplot $bn.ps $bn.gp
+clipcli -s $bn.gp -F -x $premul -T > ${bn}-ord.gp
+
+sfx_slow="$frapid S$S"
+sfx_rapid="$fslow S0"
+
+gp2ngc -i ${bn}-ord.gp --sfx-rapid "$sfx_rapid" --sfx-slow "$sfx_slow" | ngc_scale -s "$invmul" | ngc_translate -x $shiftx -y $shifty > ${bn}.ngc
+
+echo "Created ${bn}.ngc"

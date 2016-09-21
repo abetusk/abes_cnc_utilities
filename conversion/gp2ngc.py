@@ -12,7 +12,6 @@ def usage():
   print("usage:")
   print("  [-i infile]              input file ('-' for stdin, default)")
   print("  [-o outfile]             output file ('-' for stdout, default)")
-  print("  [-s scale]               rescale factor")
   print("  [--pfx str]              string to print before any processing")
   print("  [--sfx-rapid str]        string to append at end of rapid motion (G0)")
   print("  [--sfx-slow str]         string to append at end of slow motion (G1)")
