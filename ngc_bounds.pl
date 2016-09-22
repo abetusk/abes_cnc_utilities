@@ -11,7 +11,7 @@ my $is_mm = 1;
 
 my $have_x = 0;
 my $have_y = 0;
-my $have_z = 0;
+my $have_z = 1;
 
 my $x_min_mm;
 my $x_max_mm;
@@ -19,8 +19,8 @@ my $x_max_mm;
 my $y_min_mm;
 my $y_max_mm;
 
-my $z_min_mm;
-my $z_max_mm;
+my $z_min_mm = 0;
+my $z_max_mm = 0;
 
 
 open FIL, $fn;
