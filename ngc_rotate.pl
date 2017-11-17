@@ -23,6 +23,7 @@ sub usage
   print " [-o out]              output gcode file (defaults to stdout)\n";
   print " [-d deg]              rotation in degrees\n";
   print " [-r rad]              rotation in radians (overrides -d)\n";
+  print " [-C]                  print comment header in output ngc (GRBL style)\n";
   print " [-h|--help]           help (this screen)\n";
   print " [--version]           print version number\n";
 }
@@ -37,7 +38,7 @@ usage() and exit(0) if (scalar(@ARGV) == 0);
 open(my $FH_INP, "-");
 open(my $FH_OUT, ">-");
 my %opts;
-getopts("f:o:r:d:h", \%opts);
+getopts("f:o:r:d:hC", \%opts);
 
 my $rot_rad = 0.0;
 
@@ -48,6 +49,9 @@ open($FH_INP, $opts{f}) if ($opts{f});
 open($FH_OUT, ">$opts{o}") if ($opts{o});
 $rot_rad = deg2rad($opts{d})  if ($opts{d});
 $rot_rad = $opts{r}           if ($opts{r});
+
+my $show_comments = 0;
+if (exists($opts{C})) { $show_comments=1; }
 
 my %rot_mat;
 $rot_mat{"0,0"} =  cos($rot_rad);
@@ -98,7 +102,9 @@ $state{line_flag} = "";
 my $op;
 my $operand;
 
-print $FH_OUT "( rot_rad $rot_rad, rot_mat[ [ ", $rot_mat{"0,0"}, ", ", $rot_mat{"0,1"}, " ], [ ", $rot_mat{"1,0"}, ", ", $rot_mat{"1,1"}, " ] ] )\n";
+if ($show_comments) {
+  print $FH_OUT "( rot_rad $rot_rad, rot_mat[ [ ", $rot_mat{"0,0"}, ", ", $rot_mat{"0,1"}, " ], [ ", $rot_mat{"1,0"}, ", ", $rot_mat{"1,1"}, " ] ] )\n";
+}
 
 foreach my $line (@gcode)
 {
