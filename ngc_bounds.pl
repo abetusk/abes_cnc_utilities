@@ -105,7 +105,7 @@ print "min_x: ", $x_min_mm, " mm, ", ($x_min_mm/25.4), " inch\n";
 print "max_x: ", $x_max_mm, " mm, ", ($x_max_mm/25.4), " inch\n";
 
 print "min_y: ", $y_min_mm, " mm, ", ($y_min_mm/25.4), " inch\n";
-print "may_y: ", $y_max_mm, " mm, ", ($y_max_mm/25.4), " inch\n";
+print "max_y: ", $y_max_mm, " mm, ", ($y_max_mm/25.4), " inch\n";
 
 print "min_z: ", $z_min_mm, " mm, ", ($z_min_mm/25.4), " inch\n";
 print "max_z: ", $z_max_mm, " mm, ", ($z_max_mm/25.4), " inch\n";
