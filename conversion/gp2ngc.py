@@ -10,18 +10,21 @@ VERSION = "0.1.0"
 
 ctx = {
   "units" : "mm", "epsilon" : 1.0/1024.0,
+  "sort": False,
   "explicit_speed": False,
   "premul" : 1.0, "premul_x" : 1.0, "premul_y" : 1.0, "premul_z" : 1.0,
   "header" : "", "footer" : "",
   "g0speed" : "", "g1speed" : "",
   "z_active": False,
-  "z_step" : 7.0, "z_height" : 5.0, "z_plunge" : -21.0, "z_0" : 0.0, "z_slow" : 802.0, "z_rapid" : 800.0,
+  "z_step" : 7.0, "z_height" : 5.0, "z_plunge" : -21.0, "z_0" : 0.0, "z_slow" : "", "z_rapid" : "",
   "tab_n" : 0, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 5.0, "tab_slide_factor" : 1/8.0,
-  "tab_default_n" : 4
+  "tab_default_n" : 4,
+  "close_polygon": True
 }
 
 ctx_laser = {
   "units" : "mm", "epsilon" : 1.0/1024.0,
+  "sort": False,
   "explicit_speed": False,
   "premul" : 1.0, "premul_x" : 1.0, "premul_y" : 1.0, "premul_z" : 1.0,
   "header" : "", "footer" : "",
@@ -29,20 +32,23 @@ ctx_laser = {
   "z_active": False,
   "z_step" : 0.0, "z_height" : 0.0, "z_plunge" : 0.0, "z_0" : 0.0, "z_slow" : 0.0, "z_rapid" : 0.0,
   "tab_n" : 0, "tab_offset" : 0.0, "tab_length" : 2.5, "tab_height" : 0.0, "tab_slide_factor" : 1/8.0,
-  "tab_default_n" : 4
+  "tab_default_n" : 4,
+  "close_polygon": False
 }
 
 ctx_maslow = {
-  "units" : "mm", "epsilon" : 1.0/1024.0,
+  "units" : "mm", "epsilon" : 1.0/(1024.0*1024.0),
+  "sort": False,
   "explicit_speed": False,
   "premul" : 1.0, "premul_x" : 1.0, "premul_y" : 1.0, "premul_z" : 1.0,
   "header" : "", "footer" : "",
   #"g0speed" : 800.0, "g1speed" : 800.0,
   "g0speed" : "", "g1speed" : "",
   "z_active": True,
-  "z_step" : 7.0, "z_height" : 5.0, "z_plunge" : -21.0, "z_0" : 0.0, "z_slow" : 802.0, "z_rapid" : 800.0,
-  "tab_n" : 4, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 3.0, "tab_slide_factor" : 1/8.0,
-  "tab_default_n" : 4
+  "z_step" : 7.0, "z_height" : 5.0, "z_plunge" : -21.0, "z_0" : 0.0, "z_slow" : "", "z_rapid" : "",
+  "tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 3.0, "tab_slide_factor" : 1/8.0,
+  "tab_default_n" : 3,
+  "close_polygon": True
 }
 
 def usage():
@@ -85,6 +91,20 @@ def print_polygon_debug2(pgn, ofp=sys.stdout):
     #  print( "\n", file=ofp)
 
 
+def cmp_pgn_ele(a,b):
+  if (len(a) == 0): return -1
+  if (len(b) == 0): return 1
+
+  s0 = math.sqrt(a[0][0]*a[0][0] + a[0][1]*a[0][1])
+  s1 = math.sqrt(b[0][0]*b[0][0] + b[0][1]*b[0][1])
+
+  if s0 < s1: return -1
+  if s1 > s0: return  1
+  return 0
+
+def polygons_sort(pgns):
+  pgns.sort(cmp_pgn_ele)
+
 
 def print_polygon(pgn, ofp=sys.stdout):
   print("", file=ofp)
@@ -110,7 +130,7 @@ def ingest_egest_orig(ctx, ifp = sys.stdin, ofp = sys.stdout):
   polygons = []
   polygon = []
 
-  print(pfx, file=ofp)
+  print(ctx["header"], file=ofp)
 
   line_no=0
   #for line in sys.stdin:
@@ -133,8 +153,8 @@ def ingest_egest_orig(ctx, ifp = sys.stdin, ofp = sys.stdout):
       sys.exit(1)
 
     try:
-      x = float(r[0])
-      y = float(r[1])
+      x = float(r[0]) * ctx["premul"]
+      y = float(r[1]) * ctx["premul"]
     except Exception, e:
       print(e, file=sys.stderr)
       sys.exit(1)
@@ -144,15 +164,18 @@ def ingest_egest_orig(ctx, ifp = sys.stdin, ofp = sys.stdout):
   for p in polygons:
     if len(p)==0: continue
 
-    x0 = p[0][0] * ctx["premul"]
-    y0 = p[0][1] * ctx["premul"]
+    x0 = p[0][0]
+    y0 = p[0][1]
 
     print("G0", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), sfx_rapid, file=ofp)
     for xy in p:
-      x = xy[0] * ctx["premul"]
-      y = xy[1] * ctx["premul"]
-      print("G1", "X" + "{:.10f}".format(x), "Y" + "{:.10f}".format(y), sfx_slow, file=ofp)
-    print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), sfx_slow, file=ofp)
+      x = xy[0]
+      y = xy[1]
+      print("G1", "X" + "{:.10f}".format(x), "Y" + "{:.10f}".format(y), ctx["g1speed"], file=ofp)
+
+    if ctx["close_polygon"]:
+      print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), ctx["g1speed"], file=ofp)
+
     print(file=ofp)
 
   print(sfx, file=ofp)
@@ -184,26 +207,32 @@ def ingest_egest(ctx, ifp = sys.stdin, ofp = sys.stdout):
       sys.exit(1)
 
     try:
-      x = float(r[0])
-      y = float(r[1])
+      x = float(r[0]) * ctx["premul"]
+      y = float(r[1]) * ctx["premul"]
     except Exception, e:
       print(e, file=sys.stderr)
       sys.exit(1)
 
     polygon.append([x,y])
 
+  if len(polygon)>0:
+    polygons.append(polygon)
+
+  if ctx["sort"]:
+    polygons_sort(polygons)
+
   for p in polygons:
     if len(p)==0: continue
 
-    x0 = p[0][0] * ctx["premul"]
-    y0 = p[0][1] * ctx["premul"]
+    x0 = p[0][0]
+    y0 = p[0][1]
 
     print("G0", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), ctx["g0speed"], file=ofp)
 
     nstep=1
     if ctx["z_active"]:
       print("G0", "Z" + "{:.10f}".format(ctx["z_height"]), ctx["z_rapid"], file=ofp)
-      nstep = int(abs(math.ceil((ctx["z_plunge"] - ctx["z_0"])/ctx["z_step"])))
+      nstep = int(math.ceil(( abs(ctx["z_plunge"] - ctx["z_0"]) )/ctx["z_step"]))
 
     for s in range(nstep):
 
@@ -216,11 +245,13 @@ def ingest_egest(ctx, ifp = sys.stdin, ofp = sys.stdout):
         print("G1", "Z" + "{:.10f}".format(zh), ctx["z_slow"], file=ofp)
 
       for xy in p:
-        x = xy[0] * ctx["premul"]
-        y = xy[1] * ctx["premul"]
+        x = xy[0]
+        y = xy[1]
         print("G1", "X" + "{:.10f}".format(x), "Y" + "{:.10f}".format(y), ctx["g0speed"], file=ofp)
 
-      print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), ctx["g0speed"], file=ofp)
+      if ctx["close_polygon"]:
+        print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), ctx["g0speed"], file=ofp)
+
       print(file=ofp)
 
     if ctx["z_active"]:
@@ -259,11 +290,11 @@ def polygon_curve_score(pgn, tab_beg, tab_len):
     prv_idx = (idx + len(pgn) - 1) % len(pgn)
     nxt_idx = (idx + 1) % len(pgn)
 
-    if (tab_beg + tab_len) < pgn[idx]["s"]: continue
+    if (tab_beg + tab_len) < pgn[idx]["s"]: return score
     if tab_beg > pgn[idx]["s"]: continue
 
-    s0 = max(pgn[prv_idx]["s"], tab_beg) - pgn[idx]["s"]
-    s1 = pgn[idx]["s"] - min(tab_beg + tab_len, pgn[nxt_idx]["s"])
+    s0 = abs(max(pgn[prv_idx]["s"], tab_beg) - pgn[idx]["s"])
+    s1 = abs(pgn[idx]["s"] - min(tab_beg + tab_len, pgn[nxt_idx]["s"]))
 
     score += s0*s1*pgn[idx]["n"]*pgn[idx]["n"]
 
@@ -380,8 +411,8 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
       sys.exit(1)
 
     try:
-      x = float(r[0])
-      y = float(r[1])
+      x = float(r[0]) * ctx["premul"]
+      y = float(r[1]) * ctx["premul"]
     except Exception, e:
       print(e, file=sys.stderr)
       sys.exit(1)
@@ -407,6 +438,11 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
   if len(polygon)!=0:
     polygons.append(polygon)
 
+  if ctx["sort"]:
+    polygons_sort(polygons)
+
+
+
   # decorate with 'n' cross product magnitude value for
   # score tab positioning heuristic.
   #
@@ -424,7 +460,6 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
       v1 = { "x": pgn[nxt_idx]["x"] - pgn[idx]["x"], "y" : pgn[nxt_idx]["y"] - pgn[idx]["y"] }
       pgn[idx]["n"] = crossprodmag( v0, v1 )
 
-  _premul = ctx["premul"]
   _zheight = ctx["z_height"]
   _zplunge = ctx["z_plunge"]
   _zzero = ctx["z_0"]
@@ -448,7 +483,7 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
 
     clen = p[ len(p) - 1 ]["s"]
 
-    s_window_len = clen / (4 * float(_ntab))
+    s_window_len = (clen / (float(_ntab))) - _tablen
 
     if _tablen <= 0.0: continue
     if clen < (float(_ntab) * _tablen): continue
@@ -460,24 +495,37 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
       # offset and another at some distance away that doesn't overlap with the
       # other tab, to determine where the tab should be positioned.
       #
-      score0 = polygon_curve_score(polygons[pidx], tab_s_offset, _tablen)
-      score1 = polygon_curve_score(polygons[pidx], tab_s_offset + s_window_len, _tablen)
+      n_tab_sample = 4
+      score, min_score, min_idx = [], 0, 0
+      for idx in range(n_tab_sample):
+        tab_shift = float(idx) * s_window_len / float(n_tab_sample)
+        score.append( polygon_curve_score(polygons[pidx], tab_s_offset + tab_shift , _tablen) )
+        #print("#", tab_s_offset + tab_shift, score[idx])
+        if idx==0:
+          min_score = score[0]
+          min_idx = 0
+        elif min_score > score[idx]:
+          min_score = score[idx]
+          min_idx = idx
+      #print("## min_score", min_score, ", min_idx", min_idx)
 
-      #print("#", tab_s_offset, score0)
-      #print("#", tab_s_offset + s_window_len, score1)
+      tab_shift = float(min_idx) * s_window_len / float(n_tab_sample)
+      polygons[pidx] = polygon_insert_tab_at(polygons[pidx], tab_s_offset + tab_shift, _tablen)
 
-      if score1 < score0:
-        polygons[pidx] = polygon_insert_tab_at(polygons[pidx], tab_s_offset + s_window_len, _tablen)
-      else:
-        polygons[pidx] = polygon_insert_tab_at(polygons[pidx], tab_s_offset, _tablen)
+      #if score0 == min(score0, score1, score2):
+      #  polygons[pidx] = polygon_insert_tab_at(polygons[pidx], tab_s_offset, _tablen)
+      #elif score1 == min(score0, score1, score2):
+      #  polygons[pidx] = polygon_insert_tab_at(polygons[pidx], tab_s_offset + s_window_len/2, _tablen)
+      #else:
+      #  polygons[pidx] = polygon_insert_tab_at(polygons[pidx], tab_s_offset + s_window_len, _tablen)
 
     #print_polygon_debug(polygons[pidx])
 
   for p in polygons:
     if len(p)==0: continue
 
-    x0 = p[0]["x"] * _premul
-    y0 = p[0]["y"] * _premul
+    x0 = p[0]["x"]
+    y0 = p[0]["y"]
 
     print("G0", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), _g0speed, file=ofp)
 
@@ -509,8 +557,8 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
             #print(";# down!", file=ofp)
             print("G1", "Z" + "{:.10f}".format(zh), _g1speed, file=ofp)
 
-        x = xy["x"] * _premul
-        y = xy["y"] * _premul
+        x = xy["x"]
+        y = xy["y"]
         print("G1", "X" + "{:.10f}".format(x), "Y" + "{:.10f}".format(y), _g1speed, file=ofp)
 
         if ctx["z_active"]:
@@ -521,7 +569,8 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
 
         prev_entry_type = xy["t"]
 
-      if ctx["z_active"]:
+      #if ctx["z_active"]:
+      if ctx["close_polygon"]:
         print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), _g1speed, file=ofp)
 
       print(file=ofp)
@@ -538,7 +587,9 @@ def main(argv):
 
   long_opt_list = [ "help", "preset=", "show-context", "z", "explicit-speed", "premul=", "epsilon=", "header=", "footer=", "rapid=", "slow=",
                     "z-rapid=", "z-slow=", "z-step=", "z-raise=", "z-plunge=",
-                    "tab", "tab-n=", "tab-length=", "tab-height="]
+                    "tab", "tab-n=", "tab-length=", "tab-height=", "notab",
+                    "close-polygon", "open-polygon",
+                    "sort"]
 
   try:
     #opts,args = getopt.getopt(argv,"hi:o:",["sfx-final=", "pfx=", "sfx-rapid=","sfx-slow=", "premul=", "z-step", "z-raise", "z-plunge"])
@@ -556,7 +607,7 @@ def main(argv):
     if opt == "--preset":
       if arg.lower() in ("maslow", "maslowcnc"):
         ctx = ctx_maslow
-      elif arg.loser() in ("laser"):
+      elif arg.lower() in ("laser"):
         ctx = ctx_laser
       else:
         print("WARNING: no preset found, using default", file=sys.stderr)
@@ -584,19 +635,27 @@ def main(argv):
     elif opt in ("--explicit-speed"): ctx["explicit_speed"] = True
 
     elif opt in ("--header"):     ctx["header"] = arg.decode('unicode_escape')
-    elif opt in ("--sfx-final"):  ctx["footer"] = arg.decode('unicode_escape')
+    elif opt in ("--footer"):  ctx["footer"] = arg.decode('unicode_escape')
+
+    elif opt in ("--close-polygon"): ctx["close_polygon"] = True
+    elif opt in ("--open-polygon"): ctx["close_polygon"] = False
 
     elif opt in ("--z"):        ctx["z_active"] = True
     elif opt in ("--z-slow"):   ctx["z_slow"] = float(arg)
     elif opt in ("--z-rapid"):  ctx["z_rapid"] = float(arg)
     elif opt in ("--z-step"):   ctx["z_step"] = float(arg)
     elif opt in ("--z-raise"):  ctx["z_height"] = float(arg)
-    elif opt in ("--z-plunge"): ctx["z_plunge"] = float(arg)
+    elif opt in ("--z-plunge"):
+      ctx["z_active"] = True
+      ctx["z_plunge"] = float(arg)
 
+    elif opt in ("--notab"):  ctx["tab_n"] = 0
     elif opt in ("--tab"):    ctx["tab_n"] = ctx["tab_default_n"]
     elif opt in ("--tab-n"):  ctx["tab_n"] = int(arg)
     elif opt in ("--tab-length"): ctx["tab_length"] = float(arg)
     elif opt in ("--tab-height"): ctx["tab_height"] = float(arg)
+
+    elif opt in ("--sort"): ctx["sort"] = True
 
   if show_context:
     print(json.dumps(ctx, indent=2))
