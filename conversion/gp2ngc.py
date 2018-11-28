@@ -247,10 +247,10 @@ def ingest_egest(ctx, ifp = sys.stdin, ofp = sys.stdout):
       for xy in p:
         x = xy[0]
         y = xy[1]
-        print("G1", "X" + "{:.10f}".format(x), "Y" + "{:.10f}".format(y), ctx["g0speed"], file=ofp)
+        print("G1", "X" + "{:.10f}".format(x), "Y" + "{:.10f}".format(y), ctx["g1speed"], file=ofp)
 
       if ctx["close_polygon"]:
-        print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), ctx["g0speed"], file=ofp)
+        print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), ctx["g1speed"], file=ofp)
 
       print(file=ofp)
 
