@@ -46,7 +46,8 @@ ctx_maslow = {
   "g0speed" : "", "g1speed" : "",
   "z_active": True,
   "z_step" : 7.0, "z_height" : 5.0, "z_plunge" : -21.0, "z_0" : 0.0, "z_slow" : "", "z_rapid" : "",
-  "tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 3.0, "tab_slide_factor" : 1/8.0,
+  #"tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 3.0, "tab_slide_factor" : 1/8.0,
+  "tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 13.0, "tab_slide_factor" : 1/8.0,
   "tab_default_n" : 3,
   "close_polygon": True
 }
@@ -543,13 +544,25 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
         if zh < _zplunge:
           zh = _zplunge
 
-        if (zh < _ztabstart) and (prev_entry_type == ".") and (xy["t"] == "t"):
-            #print(";# up!", file=ofp)
-            print("G1", "Z" + "{:.10f}".format(_ztabstart), _g1speed, file=ofp)
-        else:
-          print("G1", "Z" + "{:.10f}".format(zh), _g1speed, file=ofp)
+        #if (zh < _ztabstart) and (prev_entry_type == ".") and (xy["t"] == "t"):
+        #    #print(";# up!", file=ofp)
+        #    print("G1", "Z" + "{:.10f}".format(_ztabstart), _g1speed, file=ofp)
+        #else:
+        #  print("G1", "Z" + "{:.10f}".format(zh), _g1speed, file=ofp)
+
+      firstIter = True
 
       for xy in p:
+
+        if firstIter:
+          if (zh < _ztabstart) and (prev_entry_type == ".") and (xy["t"] == "t"):
+              #print(";# up!", file=ofp)
+              print("G1", "Z" + "{:.10f}".format(_ztabstart), _g1speed, file=ofp)
+          else:
+            print("G1", "Z" + "{:.10f}".format(zh), _g1speed, file=ofp)
+        firstIter = False
+
+
 
         if ctx["z_active"] and (zh < _ztabstart):
           if (prev_entry_type == "t") and (xy["t"] == "."):
