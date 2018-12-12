@@ -1,9 +1,15 @@
 #!/bin/bash
 
 inpsvg="$1"
-sf=`echo '72/25.4' | bc -l`
-premul=`echo 1000000 | bc -l`
-invmul=`echo "1/$premul" | bc -l`
+#sf=`echo '72/25.4' | bc -l`
+sf=`echo 1.0`
+
+if [[ "$2" != "" ]] ; then
+  sf="$2"
+fi
+
+premul=`echo "1000000" | bc -l`
+invmul=`echo "( 1 / $premul ) * $sf" | bc -l`
 
 frapid=""
 fslow="F800"
@@ -31,10 +37,16 @@ echo "creating $bn.ps"
 rsvg-convert -f ps -o $bn.ps $inpsvg
 
 pstoedit -f gnuplot $bn.ps $bn.gp
-clipcli -s $bn.gp -F -x $premul -T > ${bn}-ord.gp
 
-sfx_slow="$frapid S$S"
-sfx_rapid="$fslow S0"
+echo "# premul: $premul" > ${bn}-ord.gp
+clipcli -s $bn.gp -F -x $premul -T >> ${bn}-ord.gp
 
-echo gp2ngc -i ${bn}-ord.gp -s "$invmul" --sfx-rapid "$sfx_rapid" --sfx-slow "$sfx_slow" -o ${bn}.ngc
-gp2ngc -i ${bn}-ord.gp --sfx-rapid "$sfx_rapid" --sfx-slow "$sfx_slow" | ngc_scale -s "$invmul" > ${bn}.ngc
+sfx_slow="$fslow S$S"
+sfx_rapid="$frapid S0"
+
+#echo gp2ngc -i ${bn}-ord.gp -s "$invmul" --sfx-rapid "$sfx_rapid" --sfx-slow "$sfx_slow" -o ${bn}.ngc
+#gp2ngc -i ${bn}-ord.gp --sfx-rapid "$sfx_rapid" --sfx-slow "$sfx_slow" | ngc_scale -s "$invmul" > ${bn}.ngc
+
+echo gp2ngc --preset laser -i ${bn}-ord.gp --rapid "$sfx_rapid" --slow "$sfx_slow" "|" ngc_scale -s "$invmul" "> ${bn}.ngc"
+gp2ngc --preset laser -i ${bn}-ord.gp --rapid "$sfx_rapid" --slow "$sfx_slow" | ngc_scale -s "$invmul" > ${bn}.ngc
+
