@@ -33,7 +33,7 @@ ctx_laser = {
   "z_step" : 0.0, "z_height" : 0.0, "z_plunge" : 0.0, "z_0" : 0.0, "z_slow" : 0.0, "z_rapid" : 0.0,
   "tab_n" : 0, "tab_offset" : 0.0, "tab_length" : 2.5, "tab_height" : 0.0, "tab_slide_factor" : 1/8.0,
   "tab_default_n" : 4,
-  "close_polygon": False
+  "close_polygon": True
 }
 
 ctx_maslow = {
@@ -74,6 +74,8 @@ def usage():
   print("  [--tab-length s]       tab length")
   print("  [--tab-height h]       tab height")
   print("  [--show-context]       show context information")
+  print("  [--close-polygon]      connect first and last point in polygon point list (default)")
+  print("  [--open-polygon]       do not connect first and last point in polygon point list")
   print("")
 
 def print_polygon_debug(pgn, ofp=sys.stdout):
