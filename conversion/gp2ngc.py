@@ -47,7 +47,22 @@ ctx_maslow = {
   "z_active": True,
   "z_step" : 7.0, "z_height" : 5.0, "z_plunge" : -21.0, "z_0" : 0.0, "z_slow" : "", "z_rapid" : "",
   #"tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 3.0, "tab_slide_factor" : 1/8.0,
-  "tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 13.0, "tab_slide_factor" : 1/8.0,
+  "tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 50.0, "tab_height" : 10.0, "tab_slide_factor" : 1/8.0,
+  "tab_default_n" : 3,
+  "close_polygon": True
+}
+
+ctx_3040 = {
+  "units" : "mm", "epsilon" : 1.0/(1024.0*1024.0),
+  "sort": False,
+  "explicit_speed": False,
+  "premul" : 1.0, "premul_x" : 1.0, "premul_y" : 1.0, "premul_z" : 1.0,
+  "header" : "", "footer" : "",
+  "g0speed" : "", "g1speed" : "",
+  "z_active": True,
+  #"z_step" : 1.5, "z_height" : 5.0, "z_plunge" : -3.5, "z_0" : 0.0, "z_slow" : "", "z_rapid" : "",
+  "z_step" : 1.5, "z_height" : 5.0, "z_plunge" : -7, "z_0" : 0.0, "z_slow" : "", "z_rapid" : "",
+  "tab_n" : 3, "tab_offset" : 0.0, "tab_length" : 5.0, "tab_height" : 2.0, "tab_slide_factor" : 1/8.0,
   "tab_default_n" : 3,
   "close_polygon": True
 }
@@ -73,6 +88,7 @@ def usage():
   print("  [--tab-n n]            insert n tabs per contour")
   print("  [--tab-length s]       tab length")
   print("  [--tab-height h]       tab height")
+  print("  [--tab-offset s]       tab offset")
   print("  [--show-context]       show context information")
   print("  [--close-polygon]      connect first and last point in polygon point list (default)")
   print("  [--open-polygon]       do not connect first and last point in polygon point list")
@@ -183,7 +199,7 @@ def ingest_egest_orig(ctx, ifp = sys.stdin, ofp = sys.stdout):
 
   print(sfx, file=ofp)
 
-def ingest_egest(ctx, ifp = sys.stdin, ofp = sys.stdout):
+def ingest_egest_bad(ctx, ifp = sys.stdin, ofp = sys.stdout):
   polygons = []
   polygon = []
 
@@ -595,6 +611,122 @@ def ingest_egest_with_tabs(ctx, ifp = sys.stdin, ofp = sys.stdout):
   print(ctx["footer"], file=ofp)
 
 
+## Process polygon
+##
+def ingest_egest(ctx, ifp = sys.stdin, ofp = sys.stdout):
+  polygons = []
+  polygon = []
+
+  print(ctx["header"], file=ofp)
+
+  _zheight = ctx["z_height"]
+  _zplunge = ctx["z_plunge"]
+  _zzero = ctx["z_0"]
+  _zstep = ctx["z_step"]
+  _g0speed = ctx["g0speed"]
+  _g1speed = ctx["g1speed"]
+
+ 
+  firstPoint = True
+  prev_x = 0.0
+  prev_y = 0.0
+
+  line_no=0
+  for line in ifp:
+    line = line.strip()
+    line_no += 1
+
+    if (len(line)==0) or (line == ""):
+      if len(polygon)>0:
+        polygons.append(polygon)
+      polygon = []
+      firstPoint = True
+      continue
+
+    if line[0]=='#': continue
+
+    r = re.split(r'\s+', line)
+
+    if len(r)!=2:
+      print("Error on line " + str(line_no) + ": number of arguments is not 2 (" + line + ")", file=sys.stderr)
+      sys.exit(1)
+
+    try:
+      x = float(r[0]) * ctx["premul"]
+      y = float(r[1]) * ctx["premul"]
+    except Exception, e:
+      print(e, file=sys.stderr)
+      sys.exit(1)
+
+    # record lenght of outline as we go
+    #
+    s = 0.0
+    if not firstPoint:
+      ds = math.sqrt( (prev_x - x)*(prev_x - x) + (prev_y - y)*(prev_y - y) )
+      s = polygon[ len(polygon) - 1 ]["s"] + ds
+
+    prev_x = x
+    prev_y = y
+
+    # '.' type ("T" field) represent simple contour whereas 't' type
+    # represents tabs. Though space iniefficient, it's easier
+    # to decorate entries with modifiers like this than do it a more
+    # complicated but efficietn way.
+    #
+    polygon.append({ "x":x, "y":y, "s": s, "t": ".", "n":0.0 })
+    firstPoint = False
+
+  if len(polygon)!=0:
+    polygons.append(polygon)
+
+  if ctx["sort"]:
+    polygons_sort(polygons)
+
+
+  for p in polygons:
+    if len(p)==0: continue
+
+    x0 = p[0]["x"]
+    y0 = p[0]["y"]
+
+    print("G0", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), _g0speed, file=ofp)
+
+    nstep=1
+    if ctx["z_active"]:
+      print("G0", "Z" + "{:.10f}".format(_zheight), _g0speed, file=ofp)
+      nstep = int(abs(math.ceil((_zplunge - _zzero)/_zstep)))
+
+    prev_entry_type = "."
+
+    for s in range(nstep):
+
+      if ctx["z_active"]:
+        zh = ((_zplunge - _zzero) * float(s+1)/float(nstep)) + _zzero
+        if zh < _zplunge:
+          zh = _zplunge
+
+      firstIter = True
+
+      for xy in p:
+
+        if firstIter:
+          print("G1", "Z" + "{:.10f}".format(zh), _g1speed, file=ofp)
+        firstIter = False
+
+        x = xy["x"]
+        y = xy["y"]
+        print("G1", "X" + "{:.10f}".format(x), "Y" + "{:.10f}".format(y), _g1speed, file=ofp)
+
+      if ctx["close_polygon"]:
+        print("G1", "X" + "{:.10f}".format(x0), "Y" + "{:.10f}".format(y0), _g1speed, file=ofp)
+
+      print(file=ofp)
+
+    print("G0", "Z" + "{:.10f}".format(_zheight), _g0speed, file=ofp)
+
+  print(ctx["footer"], file=ofp)
+
+
 def main(argv):
   global ctx
   ifn, ofn = "-", "-"
@@ -602,7 +734,7 @@ def main(argv):
 
   long_opt_list = [ "help", "preset=", "show-context", "z", "explicit-speed", "premul=", "epsilon=", "header=", "footer=", "rapid=", "slow=",
                     "z-rapid=", "z-slow=", "z-step=", "z-raise=", "z-plunge=",
-                    "tab", "tab-n=", "tab-length=", "tab-height=", "notab",
+                    "tab", "tab-n=", "tab-length=", "tab-height=", "notab", "tab-offset=",
                     "close-polygon", "open-polygon",
                     "sort"]
 
@@ -624,6 +756,8 @@ def main(argv):
         ctx = ctx_maslow
       elif arg.lower() in ("laser"):
         ctx = ctx_laser
+      elif arg.lower() in ("3040"):
+        ctx = ctx_3040
       else:
         print("WARNING: no preset found, using default", file=sys.stderr)
 
@@ -669,6 +803,7 @@ def main(argv):
     elif opt in ("--tab-n"):  ctx["tab_n"] = int(arg)
     elif opt in ("--tab-length"): ctx["tab_length"] = float(arg)
     elif opt in ("--tab-height"): ctx["tab_height"] = float(arg)
+    elif opt in ("--tab-offset"): ctx["tab_offset"] = float(arg)
 
     elif opt in ("--sort"): ctx["sort"] = True
 
