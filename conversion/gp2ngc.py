@@ -626,6 +626,7 @@ def ingest_egest(ctx, ifp = sys.stdin, ofp = sys.stdout):
   _g0speed = ctx["g0speed"]
   _g1speed = ctx["g1speed"]
 
+  zh = _zheight
  
   firstPoint = True
   prev_x = 0.0
