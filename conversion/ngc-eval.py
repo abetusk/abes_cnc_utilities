@@ -1,5 +1,7 @@
 #!/usr/bin/python
 #
+# License: CC0
+#
 # The motivation for this script is that the output of
 # a 'pstoedit' conversion (from a .ps file, say) to
 # gcode creates an ngc file that might not be able to

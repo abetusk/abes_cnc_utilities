@@ -5,6 +5,9 @@ import sys
 
 for line in sys.stdin:
   li = line.rstrip()
+
+  li = re.sub('[gG] *20', 'G21', li)
+
   l = re.compile("([xyzXYZ]\s*-?\d+\.?\d*)").split(li)
 
   s = ''
