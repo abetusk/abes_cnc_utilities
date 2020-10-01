@@ -13,6 +13,8 @@ my $have_x = 0;
 my $have_y = 0;
 my $have_z = 1;
 
+my $seen_z = 0;
+
 my $x_min_mm;
 my $x_max_mm;
 
@@ -21,6 +23,9 @@ my $y_max_mm;
 
 my $z_min_mm = 0;
 my $z_max_mm = 0;
+
+my $seen_z_min_mm = 0;
+my $seen_z_max_mm = 0;
 
 
 open FIL, $fn;
@@ -82,6 +87,19 @@ while (<FIL>)
   {
     my $z = $1;
     my $z_mm = ( $is_mm ? $z : ($z * 25.4) );
+
+    if (!$seen_z)
+    {
+      $seen_z_min_mm = $z_mm;
+      $seen_z_max_mm = $z_mm;
+      $seen_z = 1;
+    }
+    else
+    {
+      $seen_z_min_mm = $z_mm if ($z_min_mm > $z_mm);
+      $seen_z_max_mm = $z_mm if ($z_max_mm < $z_mm);
+    }
+
     if (!$have_z)
     {
       $z_min_mm = $z_mm;
@@ -93,6 +111,7 @@ while (<FIL>)
       $z_min_mm = $z_mm if ($z_min_mm > $z_mm);
       $z_max_mm = $z_mm if ($z_max_mm < $z_mm);
     }
+
     $g_line = substr $g_line, (@+[0]);
   }
 
@@ -109,5 +128,8 @@ print "max_y: ", $y_max_mm, " mm, ", ($y_max_mm/25.4), " inch\n";
 
 print "min_z: ", $z_min_mm, " mm, ", ($z_min_mm/25.4), " inch\n";
 print "max_z: ", $z_max_mm, " mm, ", ($z_max_mm/25.4), " inch\n";
+
+print "seen_min_z: ", $seen_z_min_mm, " mm, ", ($seen_z_min_mm/25.4), " inch\n";
+print "seen_max_z: ", $seen_z_max_mm, " mm, ", ($seen_z_max_mm/25.4), " inch\n";
 
 
